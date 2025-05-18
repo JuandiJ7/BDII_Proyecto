@@ -1,0 +1,17 @@
+<form id="login">
+    <input
+      type="text"
+      [(ngModel)]="this.username"
+      name="usuario"
+      placeholder="Usuario"
+    />
+    <input
+      type="password"
+      [(ngModel)]="this.password"
+      name="Contraseña"
+      placeholder="Contraseña"
+    />
+    <button (click)="login()" type="submit">Ingresar</button>
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+    <br><button [routerLink]="['/registro']">Registrarse</button>
+</form>

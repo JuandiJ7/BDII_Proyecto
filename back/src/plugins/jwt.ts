@@ -5,8 +5,7 @@ import { FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 import { FastifyReply } from "fastify/types/reply.js";
 import { IdUsuarioType } from "../types/usuario.js";
-import { IdTema, Tema } from "../types/tema.js";
-import * as temaService from "../services/temas.js";
+
 
 const jwtOptions: FastifyJWTOptions = {
   secret: process.env.JWT_SECRET || "holaprofe",
@@ -53,20 +52,6 @@ export default fp<FastifyJWTOptions>(async (fastify) => {
       if (!usuarioToken.is_admin && usuarioToken.id_usuario !== id_usuario)
         throw reply.unauthorized(
           "No estás autorizado a modificar ese recurso que no te pertenece si no eres admin."
-        );
-    }
-  );
-
-  fastify.decorate(
-    "verifyTemaCreator",
-    async function (request: FastifyRequest, reply: FastifyReply) {
-      const usuarioToken = request.user;
-      const { id_tema } = request.params as IdTema;
-      const tema: Tema = await temaService.findById(id_tema); //Si no lo encuentra ya tira notFound
-      //Si no es admin, ni es el usuario que la creó.
-      if (usuarioToken.id_usuario !== tema.id_usuario && !usuarioToken.is_admin)
-        throw reply.unauthorized(
-          "No estás autorizado a usar un tema que no creaste tu."
         );
     }
   );

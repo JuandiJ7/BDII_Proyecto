@@ -9,27 +9,33 @@ services:
     volumes:
       - ./back:/back
     environment:
-      - PGDATABASE=${PGDATABASE}
-      - PGUSER=${PGUSER}
-      - PGPASSWORD=${PGPASSWORD}
-      - PGHOST=${PGHOST}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
   front:
-    image: nginx:alpine
+    image: front
     container_name: front
-    volumes:
-      - ./front/:/usr/share/nginx/html
-  base:
-    image: base
-    container_name: base
     build:
-      context: ./base
+      context: ./front
+    command: sh -c "npm install && npm start"
+    volumes:
+      - ./front/:/front
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
     environment:
-      - POSTGRES_DB=${PGDATABASE}
-      - POSTGRES_USER=${PGUSER}
-      - POSTGRES_PASSWORD=${PGPASSWORD}
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: nombre_db
+      MYSQL_USER: usuario
+      MYSQL_PASSWORD: contraseña
     ports:
-      - 5432:5432
+      - "3306:3306"
+    volumes:
+      - ./base/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./mysql-data:/var/lib/mysql
   proxy:
     image: nginx:alpine
     container_name: proxy

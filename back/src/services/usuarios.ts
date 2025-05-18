@@ -2,49 +2,54 @@ import { NuevoUsuarioType, UsuarioType } from "../types/usuario.js";
 import { NotFoundError } from "../util/errors.js";
 import db from "./db.js";
 
+// GET ALL
 export const findAll = async () => {
-  const res = await db.query("SELECT * FROM public.usuarios");
-  return res.rows;
+  const [rows] = await db.query("SELECT * FROM usuarios");
+  return rows;
 };
 
+// GET BY ID
 export const findById = async (id_usuario: number) => {
-  const res = await db.query(
-    "SELECT * FROM public.usuarios WHERE id_usuario=$1",
+  const [rows]: any = await db.query(
+    "SELECT * FROM usuarios WHERE id_usuario = ?",
     [id_usuario]
   );
-  if (res.rowCount === 0) throw new NotFoundError("");
-  return res.rows[0];
+  if (rows.length === 0) throw new NotFoundError("");
+  return rows[0];
 };
 
+// DELETE
 export const deleteById = async (id_usuario: number) => {
-  const res = await db.query(
-    "DELETE FROM public.usuarios WHERE id_usuario=$1",
+  const [result]: any = await db.query(
+    "DELETE FROM usuarios WHERE id_usuario = ?",
     [id_usuario]
   );
-  if (res.rowCount === 0) throw new NotFoundError("");
+  if (result.affectedRows === 0) throw new NotFoundError("");
 };
 
+// UPDATE
 export const updateById = async (usuario: UsuarioType) => {
-  const res = await db.query(
+  const [result]: any = await db.query(
     `
-    UPDATE public.usuarios  
-    SET email=$2, username=$3, is_admin=$4
-    WHERE id_usuario=$1
-    RETURNING *;
-    `,
-    [usuario.id_usuario, usuario.email, usuario.username, usuario.is_admin]
+    UPDATE usuarios
+    SET email = ?, username = ?, is_admin = ?
+    WHERE id_usuario = ?
+  `,
+    [usuario.email, usuario.username, usuario.is_admin, usuario.id_usuario]
   );
-  if (res.rowCount === 0) throw new NotFoundError("");
-  return res.rows[0];
+  if (result.affectedRows === 0) throw new NotFoundError("");
+  return { ...usuario }; // Opcionalmente podés hacer otro SELECT si querés devolver los datos actualizados de la base
 };
 
+// CREATE
 export const create = async (nuevoUsuario: NuevoUsuarioType) => {
-  const res = await db.query(
+  const [result]: any = await db.query(
     `
-    INSERT INTO public.usuarios (username,email,contraseña) 
-    VALUES($1, $2, crypt($3, gen_salt('bf'))) RETURNING *;
-    `,
+    INSERT INTO usuarios (username, email, contraseña)
+    VALUES (?, ?, ?)
+  `,
     [nuevoUsuario.username, nuevoUsuario.email, nuevoUsuario.contraseña]
   );
-  return res.rows[0];
+  const id_usuario = result.insertId;
+  return { id_usuario, ...nuevoUsuario };
 };

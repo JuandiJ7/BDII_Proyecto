@@ -1,1 +1,14 @@
+# Node
+node_modules/
+dist/
 .env
+.env.local
+npm-debug.log*
+
+# Docker
+mysql-data/
+
+# Angular
+.frontend/node_modules/
+.frontend/dist/
+.angular/
