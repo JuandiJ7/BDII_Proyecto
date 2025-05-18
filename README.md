@@ -1,4 +1,5 @@
 # Trabajo obligatorio - Primer Semestre 2025
+## Juan Diego Jacques - Fernando Sánchez
 En Uruguay, el día 11 de mayo se cierra el ciclo electoral 2024-2025
 Ese día se celebrarán las Elecciones Municipales, donde se elegirán a los
 intendentes de cada departamento, a las juntas electorales y a los alcaldes
