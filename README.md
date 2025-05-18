@@ -7,10 +7,10 @@
 - Proxy: Nginx
 - Contenedores: Docker & Docker Compose
 ### Cómo ejecutar el proyecto
-### Requisitos
+#### Requisitos
 - Docker
 - Docker Compose
-### Pasos
+#### Pasos
 1. Clonar el repositorio:
 - git clone https://github.com/JuandiJ7/BDII_Proyecto
 - cd BDII_Proyecto
