@@ -12,7 +12,9 @@
 - Docker Compose
 ### Pasos
 1. Clonar el repositorio:
+ 
 git clone https://github.com/JuandiJ7/BDII_Proyecto
+
 cd BDII_Proyecto
 2. Levantar los servicios:
 docker compose up --build
