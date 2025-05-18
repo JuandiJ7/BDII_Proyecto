@@ -1,5 +1,35 @@
 # Trabajo obligatorio - Primer Semestre 2025
 ## Juan Diego Jacques - Fernando Sánchez
+### Tecnologías utilizadas
+- Frontend: Angular
+- Backend: Fastify (Node.js)
+- Base de datos: MySQL
+- Proxy: Nginx
+- Contenedores: Docker & Docker Compose
+### Cómo ejecutar el proyecto
+### Requisitos
+- Docker
+- Docker Compose
+### Pasos
+1. Clonar el repositorio:
+git clone https://github.com/usuario/repositorio.git
+cd repositorio
+2. Levantar los servicios:
+docker compose up --build
+3. Acceder a la app:
+- Frontend: http://localhost
+- Backend (API): http://localhost/back
+### Funcionalidades esperadas
+- Registro e inicio de sesión.
+- Alta de elecciones, circuitos, mesas, papeletas, partidos y listas.
+- Emisión de voto (único por elección).
+- Control de votos observados.
+- Cierre de mesas y bloqueo posterior.
+- Reportes por circuito, partido y departamento.
+### Scripts y datos
+- base/init.sql: creación del esquema y datos iniciales.
+
+## Letra del trabajo
 En Uruguay, el día 11 de mayo se cierra el ciclo electoral 2024-2025
 Ese día se celebrarán las Elecciones Municipales, donde se elegirán a los
 intendentes de cada departamento, a las juntas electorales y a los alcaldes
