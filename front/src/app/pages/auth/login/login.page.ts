@@ -12,22 +12,20 @@ import { NgIf } from '@angular/common';
   styleUrl: './login.page.css',
 })
 export class LoginPage {
-  username!: string;
+  serie!: string;
+  numero!: string;
   password!: string;
   errorMessage: string = '';
 
-  constructor(
-    private auth: AuthService,
-    private router: Router,
-  ) {}
+  constructor(private auth: AuthService, private router: Router) {}
 
   async login() {
-    const response = await this.auth.login(this.username, this.password)
-    if(response){
+    const username = `${this.serie}${this.numero}`.toUpperCase();
+    const response = await this.auth.login(username, this.password);
+    if (response) {
       await this.router.navigate(['/home']);
     } else {
       this.errorMessage = 'Las credenciales son incorrectas';
     }
-    
   }
 }

@@ -33,29 +33,34 @@ const authRoutes: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
     handler: async function (request, reply) {
       const { username, contraseña } = request.body as LoginType;
 
-      // Buscar el usuario por username
-      const [rows]: any = await db.query(
-        "SELECT id_usuario, email, username, is_admin, password FROM usuarios WHERE username = ?",
-        [username]
-      );
+      try {
+        // Buscar el usuario por username
+        const [rows]: [any[], any] = await db.query(
+          "SELECT id_usuario, email, username, is_admin, password FROM usuarios WHERE username = ?",
+          [username]
+        );
 
-      if (rows.length === 0) {
-        return reply.unauthorized("El username o contraseña no es correcto.");
+        if (rows.length === 0) {
+          return reply.unauthorized("El username o contraseña no es correcto.");
+        }
+
+        const usuario = rows[0];
+
+        // Comparar contraseñas con bcrypt
+        const esValida = await bcrypt.compare(contraseña, usuario.password);
+        if (!esValida) {
+          return reply.unauthorized("El username o contraseña no es correcto.");
+        }
+
+        // Eliminar la contraseña antes de enviar el usuario
+        delete usuario.password;
+
+        const token = fastify.jwt.sign(usuario);
+        reply.send({ token, usuario });
+      } catch (error) {
+        console.error("Error en login:", error);
+        return reply.internalServerError("Error interno al intentar loguear.");
       }
-
-      const usuario = rows[0];
-
-      // Comparar contraseñas con bcrypt
-      const esValida = await bcrypt.compare(contraseña, usuario.password);
-      if (!esValida) {
-        return reply.unauthorized("El username o contraseña no es correcto.");
-      }
-
-      // Eliminar contraseña antes de firmar el token
-      delete usuario.contraseña;
-
-      const token = fastify.jwt.sign(usuario);
-      reply.send({ token, usuario });
     },
   });
 };

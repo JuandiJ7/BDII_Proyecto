@@ -1,17 +1,31 @@
-<form id="login">
+<main class="main-container">
+  <form id="login" (ngSubmit)="login()">
     <input
       type="text"
-      [(ngModel)]="this.username"
-      name="usuario"
-      placeholder="Usuario"
+      [(ngModel)]="serie"
+      name="serie"
+      placeholder="Serie (ABC)"
+      maxlength="3"
+      required
+    />
+    <input
+      type="text"
+      [(ngModel)]="numero"
+      name="numero"
+      placeholder="Número (12345)"
+      maxlength="5"
+      required
     />
     <input
       type="password"
-      [(ngModel)]="this.password"
-      name="Contraseña"
+      [(ngModel)]="password"
+      name="password"
       placeholder="Contraseña"
+      required
     />
-    <button (click)="login()" type="submit">Ingresar</button>
+    <button type="submit">Ingresar</button>
     <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
-    <br><button [routerLink]="['/registro']">Registrarse</button>
-</form>
+    <br />
+    <button [routerLink]="['/registro']">Registrarse</button>
+  </form>
+</main>
