@@ -10,10 +10,15 @@
 #### Requisitos
 - Docker
 - Docker Compose
+- (Recomendado pero opcional) WSL Ubuntu:
+       - Abrir la consola de comandos de Windows
+       - Ejecutar el comando wsl --install
+       - Realizar los pasos de instalación del ambiente en una terminal de Ubuntu
 #### Pasos
 1. Clonar el repositorio:
 - git clone https://github.com/JuandiJ7/BDII_Proyecto
 - cd BDII_Proyecto
+- code . (abrir Visual Studio Code)
 2. Levantar los servicios:
 - docker compose up --build
 3. Acceder a la app:
