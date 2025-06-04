@@ -8,11 +8,11 @@ import db from "../../services/db.js";
 import { Type } from "@sinclair/typebox";
 import bcrypt from "bcrypt";
 
-const authRoutes: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
+const authRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.post("/", {
     schema: {
       summary: "Hacer login",
-      description: "Ruta para loguearse usando username y contraseña.",
+      description: "Ruta para loguearse usando credencial y contraseña.",
       security: [],
       tags: ["auth"],
       body: LoginSchema,
@@ -31,28 +31,26 @@ const authRoutes: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
       },
     },
     handler: async function (request, reply) {
-      const { username, contraseña } = request.body as LoginType;
+      const { credencial, contraseña } = request.body as LoginType;
 
       try {
-        // Buscar el usuario por username
         const [rows]: [any[], any] = await db.query(
-          "SELECT id_usuario, email, username, is_admin, password FROM usuarios WHERE username = ?",
-          [username]
+          "SELECT * FROM CIUDADANO WHERE cc = ?",
+          [credencial]
         );
 
         if (rows.length === 0) {
-          return reply.unauthorized("El username o contraseña no es correcto.");
+          return reply.unauthorized("La credencial o contraseña no es correcta.");
         }
 
         const usuario = rows[0];
+        console.log(usuario)
 
-        // Comparar contraseñas con bcrypt
         const esValida = await bcrypt.compare(contraseña, usuario.password);
         if (!esValida) {
-          return reply.unauthorized("El username o contraseña no es correcto.");
+          return reply.unauthorized("La credencial o contraseña no es correcta.");
         }
 
-        // Eliminar la contraseña antes de enviar el usuario
         delete usuario.password;
 
         const token = fastify.jwt.sign(usuario);

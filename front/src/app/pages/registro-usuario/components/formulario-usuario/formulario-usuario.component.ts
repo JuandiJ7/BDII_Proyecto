@@ -1,109 +1,81 @@
-import { Component, OnInit } from '@angular/core';
-import { FormGroup, Validators, AbstractControl, ValidationErrors, ReactiveFormsModule, FormControl, ValidatorFn } from '@angular/forms';
-import { UsuarioService } from '../../../../services/usuario.service';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { NgIf } from '@angular/common';
 
 @Component({
   selector: 'app-formulario-usuario',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [FormsModule, NgIf],
   templateUrl: './formulario-usuario.component.html',
-  styleUrls: ['./formulario-usuario.component.css']
+  styleUrl: './formulario-usuario.component.css',
 })
-export class FormularioUsuarioComponent implements OnInit {
-  registroForm!: FormGroup; 
-  errorBotonRegistro: string = '';
+export class FormularioUsuarioComponent {
+  serie = '';
+  numero = '';
+  ci = '';
+  email = '';
+  password = '';
+  confirmar = '';
 
-  constructor(private usuarioService: UsuarioService) {}
+  nombre = '';
+  apellido = '';
+  departamento = '';
+  circuito = '';
 
-  ngOnInit() {
-    this.registroForm = new FormGroup({
-      nombre: new FormControl('', [
-        Validators.required,
-        Validators.minLength(3),
-        Validators.maxLength(30)
-      ]),
-      apellido: new FormControl('', [
-        Validators.required,
-        Validators.minLength(3),
-        Validators.maxLength(30)
-      ]),
-      nombre_usuario: new FormControl('', [
-        Validators.required,
-        Validators.minLength(3),
-        Validators.maxLength(30)
-      ], this.validarNombreUsuario.bind(this)),
-      mail: new FormControl('', [
-        Validators.required,
-        Validators.email
-      ], this.validarCorreo.bind(this)),
-      password: new FormControl('', [
-        Validators.required,
-        this.passwordValidator()
-      ]),
-      repetirPassword: new FormControl('', [
-        Validators.required
-      ])
-    }, { validators: this.passwordsIguales() });
+  datosValidos = false;
+  mensaje = '';
+
+  async verificarDatos() {
+    const credencial = (this.serie + this.numero).toUpperCase();
+    const cedula = this.ci.replace(/\D/g, '');
+
+    if (credencial.length === 8 && /^\d{6,8}$/.test(cedula)) {
+      const datos = await this.buscarDatos(credencial, cedula);
+      if (datos) {
+        this.nombre = datos.nombre;
+        this.apellido = datos.apellido;
+        this.departamento = datos.departamento;
+        this.circuito = datos.circuito;
+        this.datosValidos = true;
+      } else {
+        this.mensaje = 'No se encontró coincidencia con esa credencial.';
+        this.datosValidos = false;
+      }
+    }
   }
 
-  passwordValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const value = control.value;
+  async buscarDatos(credencial: string, ci: string) {
+    try {
+      const response = await fetch('http://localhost/back/usuarios/verificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credencial, cedula: ci })
+      });
 
-      if (!value) {
-        return null;
+      if (!response.ok) {
+        throw new Error('No encontrado');
       }
 
-      const hasUpperCase = /[A-Z]/.test(value);
-      const hasLowerCase = /[a-z]/.test(value);
-      const hasNumeric = /[0-9]/.test(value);
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(value);
-      const isValidLength = value.length >= 8 && value.length <= 12;
-
-      const passwordValid = hasUpperCase && hasLowerCase && hasNumeric && hasSpecialChar && isValidLength;
-
-      return !passwordValid ? { passwordStrength: true } : null;
-    };
-  }
-
-  passwordsIguales(): ValidatorFn {
-    return (group: AbstractControl): ValidationErrors | null => {
-      const password = group.get('password')?.value || '';
-      const repetirPassword = group.get('repetirPassword')?.value || '';
-      return password === repetirPassword ? null : { noCoinciden: true };
-    };
-  }
-
-  async validarNombreUsuario(control: AbstractControl): Promise<ValidationErrors | null> {
-    try {
-      const response = this.usuarioService.validarNombreUsuario(control.value);
-      return response ? { nombreExistente: true } : null;
-    } catch (error) {
-      return { errorServidor: true };
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('Error al buscar datos:', err);
+      return null;
     }
   }
 
-  async validarCorreo(control: AbstractControl): Promise<ValidationErrors | null> {
-    try {
-      const response = this.usuarioService.validarCorreo(control.value);
-      return response ? { correoExistente: true } : null;
-    } catch (error) {
-      return { errorServidor: true };
-    }
-  }
-
-
-  async onSubmit() {
-    if (this.registroForm?.invalid) {
-      this.errorBotonRegistro = "Error. Faltan rellenar campos de manera correcta.";
+  registrarUsuario() {
+    if (!/^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,12}$/.test(this.password)) {
+      this.mensaje = 'La contraseña debe tener entre 8 y 12 caracteres, incluir una mayúscula y un número.';
       return;
     }
 
-    const nuevoUsuario = this.registroForm?.value;
-    console.log(nuevoUsuario)
-    console.log("Usuario registrado")
-    this.errorBotonRegistro = "Se ha registrado correctamente. Redirigiendo al login...";
+    if (this.password !== this.confirmar) {
+      this.mensaje = 'Las contraseñas no coinciden.';
+      return;
+    }
+
+    // TODO: hacer POST al backend
+    this.mensaje = 'Usuario registrado correctamente (simulado).';
   }
 }
-

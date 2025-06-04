@@ -1,4 +1,4 @@
-import { FastifyPluginAsync } from "fastify";
+import { FastifyPluginAsync, FastifyRequest } from "fastify";
 import { Type } from "@sinclair/typebox";
 import {
   NuevoUsuarioSchema,
@@ -6,31 +6,22 @@ import {
   UsuarioSchema,
 } from "../../types/usuario.js";
 import * as usuarioService from "../../services/usuarios.js";
+import db from "./../../services/db.js";
+
 
 const descripcionPost =
-  " ## Implementar y validar \n " +
-  "- token \n " +
-  "- Que coincidan ambas contraseñas antes del user handler. \n " +
-  "- body. \n " +
-  "- response. \n " +
-  "- que el usuario que ejecuta es administrador.";
+  "## Crear un ciudadano\n" +
+  "- Valida que ambas contraseñas coincidan\n" +
+  "- Solo accesible por administradores\n";
 
-const usuariosRoutes: FastifyPluginAsync = async (
-  fastify,
-  opts
-): Promise<void> => {
+const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.get("/", {
     schema: {
       tags: ["usuarios"],
-      summary: "Obtener todos los usuarios",
-      description:
-        " ## Implementar y validar \n " +
-        " - token \n " +
-        " - que el usuario que ejecuta es administrador \n " +
-        " - response. \n ",
+      summary: "Obtener todos los ciudadanos",
+      description: "Devuelve el listado completo de ciudadanos. Solo admin.",
       response: {
         200: {
-          description: "Listado de usuarios. ",
           content: {
             "application/json": {
               schema: Type.Array(UsuarioSchema),
@@ -40,7 +31,7 @@ const usuariosRoutes: FastifyPluginAsync = async (
       },
     },
     onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
-    handler: async function (request, reply) {
+    handler: async function () {
       return usuarioService.findAll();
     },
   });
@@ -49,11 +40,10 @@ const usuariosRoutes: FastifyPluginAsync = async (
     schema: {
       body: NuevoUsuarioSchema,
       tags: ["usuarios"],
-      summary: "Crear usuario.",
+      summary: "Registrar ciudadano",
       description: descripcionPost,
       response: {
         201: {
-          description: "Usuario creado.",
           content: {
             "application/json": {
               schema: UsuarioSchema,
@@ -65,9 +55,59 @@ const usuariosRoutes: FastifyPluginAsync = async (
     onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
     handler: async function (request, reply) {
       const nuevoUsuario = request.body as NuevoUsuarioType;
-      reply.code(201);
-      return usuarioService.create(nuevoUsuario);
+
+      if (nuevoUsuario.contraseña !== nuevoUsuario.contraseña2) {
+        return reply.badRequest("Las contraseñas no coinciden.");
+      }
+
+      const creado = await usuarioService.create(nuevoUsuario);
+      reply.code(201).send(creado);
     },
+  });
+
+
+  fastify.post('/verificar', {
+    schema: {
+      body: Type.Object({
+        credencial: Type.String(),
+        cedula: Type.String(),
+      }),
+      response: {
+        200: Type.Object({
+          nombre: Type.String(),
+          apellido: Type.String(),
+          departamento: Type.String(),
+          circuito: Type.String(),
+        }),
+      },
+    },
+    handler: async function (
+      request: FastifyRequest<{ Body: { credencial: string; cedula: string } }>,
+      reply
+    ) {
+      const { credencial, cedula } = request.body;
+
+      const [rows]: any[] = await db.query(
+        `SELECT 
+          ci.nombres AS nombre,
+          CONCAT(ci.apellido1, ' ', ci.apellido2) AS apellido,
+          d.nombre AS departamento,
+          c.numero AS circuito
+        FROM CIUDADANO ci
+        JOIN PADRON p ON ci.credencial = p.credencial
+        JOIN CIRCUITO c ON p.id_circuito = c.id
+        JOIN DEPARTAMENTO d ON c.id_departamento = d.id
+        WHERE ci.credencial = ? AND ci.cedula = ?`,
+        [credencial, cedula]
+      );
+
+
+      if (rows.length === 0) {
+        return reply.notFound('Ciudadano no encontrado');
+      }
+
+      return rows[0];
+    }
   });
 };
 
