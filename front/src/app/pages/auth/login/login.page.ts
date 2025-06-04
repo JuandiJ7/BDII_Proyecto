@@ -20,8 +20,8 @@ export class LoginPage {
   constructor(private auth: AuthService, private router: Router) {}
 
   async login() {
-    const username = `${this.serie}${this.numero}`.toUpperCase();
-    const response = await this.auth.login(username, this.password);
+    const credencial = `${this.serie}${this.numero}`.toUpperCase();
+    const response = await this.auth.login(credencial, this.password);
     if (response) {
       await this.router.navigate(['/home']);
     } else {

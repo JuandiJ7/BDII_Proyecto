@@ -6,17 +6,12 @@ import swaggerui from "@fastify/swagger-ui";
 const swaggerOpts: SwaggerOptions = {
   openapi: {
     info: {
-      title: "API PARCIAL",
+      title: "API BDII 2025",
       summary:
-        "Summary: Api creado para el parcil 1 de Desarrollo web y mobile.",
-      description: "Api creado para el parcil 1 de Desarrollo web y mobile.",
+        "Summary: Api creado para Obligatorio BDII 2025",
+      description: "Api creado para Obligatorio BDII 2025",
       termsOfService: `http://aca.va.la.url.con.los.terminos.y.condiciones`,
       version: "1.0",
-      contact: {
-        name: "JMELNIK",
-        url: "http://www.example.com/support",
-        email: "jorge.melnik@ucu.edu.uy",
-      },
       license: {
         name: "Apache 2.0",
         url: "http://www.apache.org/licenses/LICENSE-2.0.html",
@@ -47,16 +42,12 @@ const swaggerOpts: SwaggerOptions = {
     tags: [
       {
         name: "auth",
-        description: "Endpoints para autenticación..",
+        description: "Endpoints para autenticación.",
       },
       {
         name: "usuarios",
         description: "Endpoints para CRUD de usuarios.",
-      },
-      {
-        name: "temas",
-        description: "Endpoints para CRUD de temas.",
-      },
+      }
     ],
   },
   hideUntagged: true,

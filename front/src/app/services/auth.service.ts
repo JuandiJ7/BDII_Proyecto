@@ -7,20 +7,20 @@ import { FetchService } from './fetch.service';
 export class AuthService {
   constructor(private fetchService: FetchService) {}
 
-  async login(username: string, contraseña: string): Promise<boolean> {
-    try {
-      const body = JSON.stringify({ username, contraseña });
-      const response = await this.fetchService.post<{ token: string }>(
-        'auth/',
-        body
-      );
-      this.fetchService.setToken(response.token);
-      return true;
-    } catch (error) {
-      console.error('Login failed', error);
-      return false;
-    }
+  async login(credencial: string, contraseña: string): Promise<boolean> {
+  try {
+    const body = JSON.stringify({ credencial, contraseña });
+    const response = await this.fetchService.post<{ token: string }>(
+      'auth/',
+      body
+    );
+    this.fetchService.setToken(response.token);
+    return true;
+  } catch (error) {
+    console.error('Login failed', error);
+    return false;
   }
+}
 
   logout(): void {
     this.fetchService.setToken('');

@@ -1,55 +1,77 @@
-import { NuevoUsuarioType, UsuarioType } from "../types/usuario.js";
+import { UsuarioType, NuevoUsuarioType } from "../types/usuario.js";
 import { NotFoundError } from "../util/errors.js";
 import db from "./db.js";
+import bcrypt from "bcrypt";
 
-// GET ALL
-export const findAll = async () => {
-  const [rows] = await db.query("SELECT * FROM usuarios");
-  return rows;
+// GET ALL ciudadanos
+export const findAll = async (): Promise<UsuarioType[]> => {
+  const [rows] = await db.query("SELECT * FROM CIUDADANO");
+  return rows as UsuarioType[];
 };
 
-// GET BY ID
-export const findById = async (id_usuario: number) => {
-  const [rows]: any = await db.query(
-    "SELECT * FROM usuarios WHERE id_usuario = ?",
-    [id_usuario]
-  );
-  if (rows.length === 0) throw new NotFoundError("");
+// GET BY CC
+export const findByCC = async (cc: string): Promise<UsuarioType> => {
+  const [rows]: any = await db.query("SELECT * FROM CIUDADANO WHERE cc = ?", [cc]);
+  if (rows.length === 0) throw new NotFoundError("Ciudadano no encontrado");
   return rows[0];
 };
 
 // DELETE
-export const deleteById = async (id_usuario: number) => {
-  const [result]: any = await db.query(
-    "DELETE FROM usuarios WHERE id_usuario = ?",
-    [id_usuario]
-  );
-  if (result.affectedRows === 0) throw new NotFoundError("");
+export const deleteByCC = async (cc: string) => {
+  const [result]: any = await db.query("DELETE FROM CIUDADANO WHERE cc = ?", [cc]);
+  if (result.affectedRows === 0) throw new NotFoundError("Ciudadano no encontrado");
 };
 
-// UPDATE
-export const updateById = async (usuario: UsuarioType) => {
+// UPDATE (actualiza datos básicos)
+export const updateByCC = async (usuario: UsuarioType) => {
   const [result]: any = await db.query(
     `
-    UPDATE usuarios
-    SET email = ?, username = ?, is_admin = ?
-    WHERE id_usuario = ?
+    UPDATE CIUDADANO
+    SET nombre = ?, apellido = ?, ci = ?, fecha_nac = ?, direccion = ?, rol = ?, id_departamento = ?
+    WHERE cc = ?
   `,
-    [usuario.email, usuario.username, usuario.is_admin, usuario.id_usuario]
+    [
+      usuario.nombre,
+      usuario.apellido,
+      usuario.ci,
+      usuario.fecha_nac,
+      usuario.direccion,
+      usuario.rol,
+      usuario.id_departamento,
+      usuario.cc,
+    ]
   );
-  if (result.affectedRows === 0) throw new NotFoundError("");
-  return { ...usuario }; // Opcionalmente podés hacer otro SELECT si querés devolver los datos actualizados de la base
+  if (result.affectedRows === 0) throw new NotFoundError("Ciudadano no encontrado");
+  return { ...usuario };
 };
 
-// CREATE
+// CREATE nuevo ciudadano
 export const create = async (nuevoUsuario: NuevoUsuarioType) => {
-  const [result]: any = await db.query(
+  const hashedPassword = await bcrypt.hash(nuevoUsuario.contraseña, 10);
+
+  const []: any = await db.query(
     `
-    INSERT INTO usuarios (username, email, contraseña)
-    VALUES (?, ?, ?)
+    INSERT INTO CIUDADANO (cc, nombre, apellido, ci, fecha_nac, direccion, rol, password)
+    VALUES (?, ?, ?, ?, ?, ?, 'votante', ?)
   `,
-    [nuevoUsuario.username, nuevoUsuario.email, nuevoUsuario.contraseña]
+    [
+      nuevoUsuario.cc,
+      nuevoUsuario.nombre,
+      nuevoUsuario.apellido,
+      nuevoUsuario.ci,
+      nuevoUsuario.fecha_nac,
+      nuevoUsuario.direccion,
+      hashedPassword,
+    ]
   );
-  const id_usuario = result.insertId;
-  return { id_usuario, ...nuevoUsuario };
+
+  return {
+    cc: nuevoUsuario.cc,
+    nombre: nuevoUsuario.nombre,
+    apellido: nuevoUsuario.apellido,
+    ci: nuevoUsuario.ci,
+    fecha_nac: nuevoUsuario.fecha_nac,
+    direccion: nuevoUsuario.direccion,
+    rol: "votante",
+  };
 };

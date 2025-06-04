@@ -1,80 +1,82 @@
 import { Type, Static } from "@sinclair/typebox";
 
-export const IdUsuarioSchema = Type.Object({
-  id_usuario: Type.Integer({ description: "Identificador único del usuario" }),
-});
-export type IdUsuarioType = Static<typeof IdUsuarioSchema>;
-
 export const LoginSchema = Type.Object(
   {
-    username: Type.String({ description: "Nombre de usuario para el login" }),
-    contraseña: Type.String({ description: "Contraseña del usuario" }),
+    credencial: Type.String({ description: "Credencial del ciudadano" }),
+    contraseña: Type.String({ description: "Contraseña del ciudadano" }),
   },
   {
-    examples: [
-      { username: "admin", contraseña: "@Admin1" },
-      { username: "pepe", contraseña: "@Pepe1" },
-    ],
+    examples: [{ credencial: "JCD21812", contraseña: "@Juan1" }],
   }
 );
 export type LoginType = Static<typeof LoginSchema>;
 
+// Nuevo esquema reflejando la estructura real de la tabla CIUDADANO
 export const UsuarioSchema = Type.Object(
   {
-    id_usuario: Type.Integer({
-      description: "Identificador único del usuario",
-    }),
-    username: Type.String({ description: "Nombre de usuario" }),
-    email: Type.String({ description: "Correo electrónico del usuario" }),
-    is_admin: Type.Boolean({
-      description: "Indica si el usuario es administrador",
-    }),
+    cc: Type.String({ description: "Credencial cívica del ciudadano" }),
+    nombre: Type.String(),
+    apellido: Type.String(),
+    ci: Type.String(),
+    fecha_nac: Type.String({ format: "date" }), // también podés usar Type.Date() si preferís
+    direccion: Type.String(),
+    id_departamento: Type.Optional(Type.Integer()),
+    rol: Type.Union([
+      Type.Literal("votante"),
+      Type.Literal("admin"),
+      Type.Literal("funcionario"),
+    ]),
   },
   {
     additionalProperties: false,
     examples: [
       {
-        id_usuario: 5,
-        username: "nuevo1",
-        email: "actualizado1@parcial.com",
-        is_admin: false,
+        cc: "JCD21812",
+        nombre: "Juan Diego",
+        apellido: "Jacques Sánchez",
+        ci: "54818839",
+        fecha_nac: "2003-06-27",
+        direccion: "Apolon 1590",
+        id_departamento: null,
+        rol: "votante",
       },
     ],
   }
 );
 
+export const IdCiudadanoSchema = Type.Object({
+  cc: Type.String({ description: "Credencial cívica del ciudadano" }),
+});
+export type IdCiudadanoType = Static<typeof IdCiudadanoSchema>;
+
 export const NuevoUsuarioSchema = Type.Object(
   {
-    username: Type.String({ description: "Nombre de usuario" }),
-    email: Type.String({ description: "Correo electrónico del usuario" }),
-    contraseña: Type.String({ description: "Contraseña del usuario" }),
-    contraseña2: Type.String({
-      description: "Confirmación de la contraseña del usuario",
-    }),
+    cc: Type.String({ description: "Credencial cívica del ciudadano" }),
+    nombre: Type.String({ description: "Nombre del ciudadano" }),
+    apellido: Type.String({ description: "Apellido del ciudadano" }),
+    ci: Type.String({ description: "Cédula de identidad" }),
+    fecha_nac: Type.String({ format: "date", description: "Fecha de nacimiento" }),
+    direccion: Type.String({ description: "Dirección del ciudadano" }),
+    contraseña: Type.String({ description: "Contraseña para iniciar sesión" }),
+    contraseña2: Type.String({ description: "Confirmación de la contraseña" }),
   },
   {
     examples: [
       {
-        username: "nuevo1",
-        email: "nuevo1@parcial.com",
-        contraseña: "@Nuevo1",
-        contraseña2: "@Nuevo1",
-      },
-      {
-        username: "nuevo2",
-        email: "nuevo2@parcial.com",
-        contraseña: "@Nuevo2",
-        contraseña2: "@Nuevo2",
-      },
-      {
-        username: "nuevo3",
-        email: "nuevo2@parcial.com",
-        contraseña: "@Nuevo3",
-        contraseña2: "@Nuevo3",
+        cc: "JCD21812",
+        nombre: "Juan Diego",
+        apellido: "Jacques Sánchez",
+        ci: "54818839",
+        fecha_nac: "2003-06-27",
+        direccion: "Apolon 1590",
+        contraseña: "@Juan1",
+        contraseña2: "@Juan1",
       },
     ],
   }
 );
 
-export type UsuarioType = Static<typeof UsuarioSchema>;
 export type NuevoUsuarioType = Static<typeof NuevoUsuarioSchema>;
+
+
+export type UsuarioType = Static<typeof UsuarioSchema>;

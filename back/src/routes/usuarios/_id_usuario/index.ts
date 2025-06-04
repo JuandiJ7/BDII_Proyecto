@@ -1,31 +1,28 @@
 import { FastifyPluginAsync } from "fastify";
 
 import {
-  IdUsuarioSchema,
-  IdUsuarioType,
+  IdCiudadanoSchema,
+  IdCiudadanoType,
   UsuarioSchema,
   UsuarioType,
 } from "../../../types/usuario.js";
 import * as usuarioService from "../../../services/usuarios.js";
 
-const usuariosRoutes: FastifyPluginAsync = async (
-  fastify,
-  opts
-): Promise<void> => {
+const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.get("/", {
     schema: {
       tags: ["usuarios"],
-      params: IdUsuarioSchema,
-      summary: "Obtener un usuario por id",
+      params: IdCiudadanoSchema,
+      summary: "Obtener un ciudadano por credencial",
       description:
-        " ## Implementar y validar \n " +
-        " - token \n " +
-        " - params \n " +
-        " - que el usuario que ejecuta es administrador o el propio usuario buscado \n " +
-        " - response. \n ",
+        "## Implementar y validar\n" +
+        "- token\n" +
+        "- params (cc)\n" +
+        "- que el usuario que ejecuta es administrador o el mismo\n" +
+        "- response\n",
       response: {
         200: {
-          description: "Usuario encontrado. ",
+          description: "Ciudadano encontrado.",
           content: {
             "application/json": {
               schema: UsuarioSchema,
@@ -36,23 +33,21 @@ const usuariosRoutes: FastifyPluginAsync = async (
     },
     onRequest: [fastify.verifyJWT, fastify.verifySelfOrAdmin],
     handler: async function (request, reply) {
-      const { id_usuario } = request.params as IdUsuarioType;
-      return usuarioService.findById(id_usuario);
+      const { cc } = request.params as IdCiudadanoType;
+      return usuarioService.findByCC(cc);
     },
   });
 
   fastify.delete("/", {
     schema: {
       tags: ["usuarios"],
-      params: IdUsuarioSchema,
-      summary: "Borrar usuario por id",
+      params: IdCiudadanoSchema,
+      summary: "Borrar ciudadano por credencial",
       description:
-        " ## Implementar y validar \n " +
-        " - token \n " +
-        " - params \n " +
-        " - que el usuario que ejecuta es administrador \n " +
-        " - está bien que falle si el usuario aún tiene temas asignadas. \n " +
-        " - response. \n ",
+        "## Implementar y validar\n" +
+        "- token\n" +
+        "- que el usuario que ejecuta es admin\n" +
+        "- response\n",
       response: {
         204: {
           description: "No content",
@@ -61,30 +56,27 @@ const usuariosRoutes: FastifyPluginAsync = async (
     },
     onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
     handler: async function (request, reply) {
-      const { id_usuario } = request.params as IdUsuarioType;
-      reply.code(204);
-      return usuarioService.deleteById(id_usuario);
+      const { cc } = request.params as IdCiudadanoType;
+      await usuarioService.deleteByCC(cc);
+      reply.code(204).send();
     },
   });
 
   fastify.put("/", {
     schema: {
       tags: ["usuarios"],
-      summary: "Actualizar usuario.",
+      summary: "Actualizar ciudadano",
       description:
-        " ## Implementar y validar \n " +
-        "- token \n " +
-        "- No se puede editar la contraseña. \n " +
-        "- body. \n " +
-        "- params \n " +
-        "- response. \n " +
-        "- que el usuario que ejecuta es administrador o el mismo usuario a modificar.",
-
+        "## Implementar y validar\n" +
+        "- token\n" +
+        "- body\n" +
+        "- que el usuario que ejecuta es admin o el mismo ciudadano\n" +
+        "- No se puede editar la contraseña\n",
       body: UsuarioSchema,
-      params: IdUsuarioSchema,
+      params: IdCiudadanoSchema,
       response: {
         200: {
-          description: "Usuario actualizado.",
+          description: "Ciudadano actualizado.",
           content: {
             "application/json": {
               schema: UsuarioSchema,
@@ -96,8 +88,8 @@ const usuariosRoutes: FastifyPluginAsync = async (
     onRequest: [fastify.verifyJWT, fastify.verifySelfOrAdmin],
     preHandler: [fastify.verifyParamsInBody],
     handler: async function (request, reply) {
-      const usuario = request.body as UsuarioType;
-      return usuarioService.updateById(usuario);
+      const ciudadano = request.body as UsuarioType;
+      return usuarioService.updateByCC(ciudadano);
     },
   });
 };
