@@ -18,14 +18,8 @@ export const UsuarioSchema = Type.Object(
     nombre: Type.String(),
     apellido: Type.String(),
     ci: Type.String(),
-    fecha_nac: Type.String({ format: "date" }), // también podés usar Type.Date() si preferís
+    fecha_nac: Type.String({ format: "date" }),
     direccion: Type.String(),
-    id_departamento: Type.Optional(Type.Integer()),
-    rol: Type.Union([
-      Type.Literal("votante"),
-      Type.Literal("admin"),
-      Type.Literal("funcionario"),
-    ]),
   },
   {
     additionalProperties: false,
