@@ -36,8 +36,6 @@ export const updateByCC = async (usuario: UsuarioType) => {
       usuario.ci,
       usuario.fecha_nac,
       usuario.direccion,
-      usuario.rol,
-      usuario.id_departamento,
       usuario.cc,
     ]
   );

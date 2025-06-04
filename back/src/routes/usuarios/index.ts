@@ -76,10 +76,10 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         200: Type.Object({
           nombre: Type.String(),
           apellido: Type.String(),
-          departamento: Type.String(),
           circuito: Type.String(),
+          departamento: Type.String(),
         }),
-      },
+      }
     },
     handler: async function (
       request: FastifyRequest<{ Body: { credencial: string; cedula: string } }>,
@@ -91,16 +91,17 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         `SELECT 
           ci.nombres AS nombre,
           CONCAT(ci.apellido1, ' ', ci.apellido2) AS apellido,
-          d.nombre AS departamento,
-          c.numero AS circuito
+          c.numero AS circuito,
+          d.nombre AS departamento
         FROM CIUDADANO ci
         JOIN PADRON p ON ci.credencial = p.credencial
         JOIN CIRCUITO c ON p.id_circuito = c.id
-        JOIN DEPARTAMENTO d ON c.id_departamento = d.id
+        JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+        JOIN LOCALIDAD l ON e.id_localidad = l.id
+        JOIN DEPARTAMENTO d ON l.id_departamento = d.id
         WHERE ci.credencial = ? AND ci.cedula = ?`,
         [credencial, cedula]
       );
-
 
       if (rows.length === 0) {
         return reply.notFound('Ciudadano no encontrado');

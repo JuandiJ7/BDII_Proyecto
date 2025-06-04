@@ -1,10 +1,9 @@
-//Modificar o borrar este archivo resta 5 puntos.
-
 import jwt, { FastifyJWTOptions } from "@fastify/jwt";
 import { FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 import { FastifyReply } from "fastify/types/reply.js";
-import { IdCiudadanoType } from "../types/usuario.js"; // Usamos CC en lugar de ID
+import { IdCiudadanoType } from "../types/usuario.js";
+import { UsuarioLoginType } from "../types/usuarioLogin.js";
 
 const jwtOptions: FastifyJWTOptions = {
   secret: process.env.JWT_SECRET || "holaprofe",
@@ -13,7 +12,6 @@ const jwtOptions: FastifyJWTOptions = {
 export default fp<FastifyJWTOptions>(async (fastify) => {
   fastify.register(jwt, jwtOptions);
 
-  // Verifica que el JWT sea válido
   fastify.decorate(
     "verifyJWT",
     async function (request: FastifyRequest, reply: FastifyReply) {
@@ -21,48 +19,40 @@ export default fp<FastifyJWTOptions>(async (fastify) => {
     }
   );
 
-  // Requiere que el usuario tenga rol admin
   fastify.decorate(
     "verifyAdmin",
     async function (request: FastifyRequest, reply: FastifyReply) {
-      const usuarioToken = request.user;
+      const usuarioToken = request.user as unknown as UsuarioLoginType;
       if (usuarioToken.rol !== "admin") {
         throw reply.unauthorized("Tienes que ser admin para hacer eso.");
       }
     }
   );
 
-  // Solo el mismo ciudadano puede acceder a sus datos
   fastify.decorate(
     "verifySelf",
     async function (request: FastifyRequest, reply: FastifyReply) {
-      const usuarioToken = request.user;
+      const usuarioToken = request.user as unknown as UsuarioLoginType;
       const { cc } = request.params as IdCiudadanoType;
 
-      if (usuarioToken.cc !== cc) {
-        throw reply.unauthorized(
-          "No estás autorizado a modificar un recurso que no te pertenece."
-        );
+      if (usuarioToken.credencial !== cc) {
+        throw reply.unauthorized("No estás autorizado a modificar este recurso.");
       }
     }
   );
 
-  // El mismo ciudadano o un admin pueden acceder
   fastify.decorate(
     "verifySelfOrAdmin",
     async function (request: FastifyRequest, reply: FastifyReply) {
-      const usuarioToken = request.user;
+      const usuarioToken = request.user as unknown as UsuarioLoginType;
       const { cc } = request.params as IdCiudadanoType;
 
-      if (usuarioToken.rol !== "admin" && usuarioToken.cc !== cc) {
-        throw reply.unauthorized(
-          "No estás autorizado a modificar ese recurso que no te pertenece si no eres admin."
-        );
+      if (usuarioToken.rol !== "admin" && usuarioToken.credencial !== cc) {
+        throw reply.unauthorized("Solo podés acceder a tu propio recurso o ser admin.");
       }
     }
   );
 
-  // Verifica que los valores en params coincidan con los del body
   fastify.decorate(
     "verifyParamsInBody",
     async function (request: FastifyRequest, reply: FastifyReply) {
