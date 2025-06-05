@@ -1,8 +1,6 @@
 import { FastifyPluginAsync, FastifyRequest } from "fastify";
 import { Type } from "@sinclair/typebox";
 import {
-  NuevoUsuarioSchema,
-  NuevoUsuarioType,
   UsuarioSchema,
 } from "../../types/usuario.js";
 import * as usuarioService from "../../services/usuarios.js";
@@ -38,30 +36,19 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
 
   fastify.post("/", {
     schema: {
-      body: NuevoUsuarioSchema,
+      body: Type.Object({
+        credencial: Type.String(),
+        password: Type.String(),
+      }),
       tags: ["usuarios"],
       summary: "Registrar ciudadano",
       description: descripcionPost,
-      response: {
-        201: {
-          content: {
-            "application/json": {
-              schema: UsuarioSchema,
-            },
-          },
-        },
-      },
     },
-    onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
     handler: async function (request, reply) {
-      const nuevoUsuario = request.body as NuevoUsuarioType;
+      const nuevoUsuario = request.body as {credencial: string, password: string};
 
-      if (nuevoUsuario.contraseña !== nuevoUsuario.contraseña2) {
-        return reply.badRequest("Las contraseñas no coinciden.");
-      }
-
-      const creado = await usuarioService.create(nuevoUsuario);
-      reply.code(201).send(creado);
+      await usuarioService.create(nuevoUsuario.credencial, nuevoUsuario.password);
+      reply.code(201).send();
     },
   });
 
@@ -78,6 +65,7 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           apellido: Type.String(),
           circuito: Type.String(),
           departamento: Type.String(),
+          direccion_establecimiento: Type.String(),
         }),
       }
     },
@@ -92,7 +80,8 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           ci.nombres AS nombre,
           CONCAT(ci.apellido1, ' ', ci.apellido2) AS apellido,
           c.numero AS circuito,
-          d.nombre AS departamento
+          d.nombre AS departamento,
+          e.direccion AS direccion_establecimiento
         FROM CIUDADANO ci
         JOIN PADRON p ON ci.credencial = p.credencial
         JOIN CIRCUITO c ON p.id_circuito = c.id
@@ -110,6 +99,40 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       return rows[0];
     }
   });
+
+  fastify.get("/verificar/:credencial",
+    {
+      schema: {
+        params: Type.Object({
+          credencial: Type.String(),
+        }),
+        response: {
+          200: Type.Object({
+            credencial: Type.String(),
+          }),
+          404: Type.Object({
+            message: Type.String(),
+          }),
+        },
+      },
+    },
+    async function (request, reply) {
+      const { credencial } = request.params as { credencial: string };
+
+      const [rows]: any[] = await db.query(
+        `SELECT credencial, rol FROM USUARIO WHERE credencial = ?`,
+        [credencial]
+      );
+
+      console.log(rows)
+
+      if (rows.length === 0) {
+        return reply.status(204).send({ message: "No registrado" });
+      }
+
+      return rows[0];
+    }
+  );
 };
 
 export default usuariosRoutes;

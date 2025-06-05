@@ -1,20 +1,60 @@
 <div class="registro-container">
-  <form class="form-izquierda" (ngSubmit)="registrarUsuario()" #f="ngForm">
+  <form class="form-izquierda" #f="ngForm">
     <h2>Ingrese sus datos</h2>
 
-    <input type="text" name="serie" [(ngModel)]="serie" placeholder="Serie de credencial" maxlength="3" required />
-    <input type="text" name="numero" [(ngModel)]="numero" placeholder="Número de credencial" maxlength="5" required />
-    <input type="text" name="ci" [(ngModel)]="ci" placeholder="Número de cédula" required pattern="^[0-9]{6,8}$" />
+    <input
+      type="text"
+      name="serie"
+      [(ngModel)]="serie"
+      #serieModel="ngModel"
+      placeholder="Serie (3 letras)"
+      maxlength="3"
+      pattern="^[A-Za-z]{3}$"
+      required
+    />
+    <p *ngIf="(serieModel.touched || serieModel.dirty) && serieModel.invalid" class="error">
+      Serie inválida. Debe tener 3 letras.
+    </p>
 
-    <input type="email" name="email" [(ngModel)]="email" placeholder="Correo electrónico" required />
+    <input
+      type="text"
+      name="numero"
+      [(ngModel)]="numero"
+      #numeroModel="ngModel"
+      placeholder="Número (solo números)"
+      maxlength="5"
+      pattern="^[0-9]{1,5}$"
+      required
+    />
+    <p *ngIf="(numeroModel.touched || numeroModel.dirty) && numeroModel.invalid" class="error">
+      Número inválido. Debe contener solo números (1 a 5 dígitos).
+    </p>
+
+    <input
+      type="text"
+      name="ci"
+      [(ngModel)]="ci"
+      #ciModel="ngModel"
+      placeholder="Cédula sin puntos ni guiones"
+      maxlength="8"
+      pattern="^[0-9]{6,8}$"
+      required
+    />
+    <p *ngIf="(ciModel.touched) && ciModel.invalid" class="error">
+      Cédula inválida. Debe tener entre 6 y 8 dígitos sin puntos ni guiones.
+    </p>
 
     <button type="button" (click)="verificarDatos()">Verificar datos</button>
-
+    <br>
     <input type="password" [(ngModel)]="password" name="password" placeholder="Contraseña" [disabled]="!datosValidos" />
     <input type="password" [(ngModel)]="confirmar" name="confirmar" placeholder="Repetir contraseña" [disabled]="!datosValidos" />
+    <p class="contra" *ngIf="!mensaje">
+      La contraseña debe tener entre 8 y 12 caracteres, incluir una mayúscula y un número.
+    </p>
 
-    <button type="submit" [disabled]="!datosValidos">Registrarse</button>
-    <p *ngIf="mensaje">{{ mensaje }}</p>
+    <button type="button" (click)="registrarUsuario()" [disabled]="!datosValidos">Registrarse</button>
+    <p class="error" *ngIf="mensaje">{{ mensaje }}</p>
+    <p class="exito" *ngIf="exito">{{ exito }}</p>
   </form>
 
   <div class="datos-derecha">
@@ -29,5 +69,8 @@
 
     <label>Circuito asignado</label>
     <input type="text" [value]="circuito" readonly />
+
+    <label>Dirección del establecimiento</label>
+    <textarea id="direccion" name="direccion" [value]="direccionEstablecimiento" readonly></textarea>
   </div>
 </div>

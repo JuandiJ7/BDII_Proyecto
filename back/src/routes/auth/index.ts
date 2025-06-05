@@ -2,7 +2,6 @@ import { FastifyPluginAsync } from "fastify";
 import {
   LoginSchema,
   LoginType,
-  UsuarioSchema,
 } from "../../types/usuario.js";
 import db from "../../services/db.js";
 import { Type } from "@sinclair/typebox";
@@ -22,8 +21,7 @@ const authRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           content: {
             "application/json": {
               schema: Type.Object({
-                token: Type.String(),
-                usuario: UsuarioSchema,
+                token: Type.String()
               }),
             },
           },
@@ -35,7 +33,7 @@ const authRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
 
       try {
         const [rows]: [any[], any] = await db.query(
-          "SELECT * FROM CIUDADANO WHERE cc = ?",
+          "SELECT * FROM USUARIO WHERE credencial = ?",
           [credencial]
         );
 
@@ -44,9 +42,9 @@ const authRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
 
         const usuario = rows[0];
-        console.log(usuario)
 
         const esValida = await bcrypt.compare(contraseña, usuario.password);
+
         if (!esValida) {
           return reply.unauthorized("La credencial o contraseña no es correcta.");
         }
@@ -54,7 +52,7 @@ const authRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         delete usuario.password;
 
         const token = fastify.jwt.sign(usuario);
-        reply.send({ token, usuario });
+        reply.send({ token });
       } catch (error) {
         console.error("Error en login:", error);
         return reply.internalServerError("Error interno al intentar loguear.");

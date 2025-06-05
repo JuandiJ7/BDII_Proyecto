@@ -2,6 +2,6 @@
   <h1>🗳️ Sistema de Votación</h1>
   <nav>
     <a routerLink="/home" routerLinkActive="active">Inicio</a>
-    <a routerLink="/votar" routerLinkActive="active">Votar</a>
+    <a *ngIf="fetchService.loggedUser()" routerLink="/votar" routerLinkActive="active">Votar</a>
   </nav>
 </header>

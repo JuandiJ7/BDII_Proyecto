@@ -1,4 +1,4 @@
-import { UsuarioType, NuevoUsuarioType } from "../types/usuario.js";
+import { UsuarioType } from "../types/usuario.js";
 import { NotFoundError } from "../util/errors.js";
 import db from "./db.js";
 import bcrypt from "bcrypt";
@@ -43,33 +43,23 @@ export const updateByCC = async (usuario: UsuarioType) => {
   return { ...usuario };
 };
 
-// CREATE nuevo ciudadano
-export const create = async (nuevoUsuario: NuevoUsuarioType) => {
-  const hashedPassword = await bcrypt.hash(nuevoUsuario.contraseña, 10);
+// CREATE nuevo USUARIO
+export const create = async (credencial: string, password: string) => {
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const []: any = await db.query(
     `
-    INSERT INTO CIUDADANO (cc, nombre, apellido, ci, fecha_nac, direccion, rol, password)
-    VALUES (?, ?, ?, ?, ?, ?, 'votante', ?)
+    INSERT IGNORE INTO USUARIO (credencial, password, rol) VALUES
+    (?, ?, 'votante')
   `,
     [
-      nuevoUsuario.cc,
-      nuevoUsuario.nombre,
-      nuevoUsuario.apellido,
-      nuevoUsuario.ci,
-      nuevoUsuario.fecha_nac,
-      nuevoUsuario.direccion,
+      credencial,
       hashedPassword,
     ]
   );
 
   return {
-    cc: nuevoUsuario.cc,
-    nombre: nuevoUsuario.nombre,
-    apellido: nuevoUsuario.apellido,
-    ci: nuevoUsuario.ci,
-    fecha_nac: nuevoUsuario.fecha_nac,
-    direccion: nuevoUsuario.direccion,
+    credencial: credencial,
     rol: "votante",
   };
 };
