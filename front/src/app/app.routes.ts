@@ -1,8 +1,10 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './components/home/home.component';
 import { LoginPage } from './pages/auth/login/login.page';
 import { loggedGuard } from './guards/logged.guard';
 import { RegistroUsuarioPage } from './pages/registro-usuario/registro-usuario.page';
+import { ConfirmarCircuitoComponent } from './pages/confirmar-circuito/confirmar-circuito.component';
+import { InicioComponent } from './pages/inicio/inicio.component';
+import { circuitoConfirmadoGuard } from './guards/circuito-confirmado.guard';
 
 
 export const routes: Routes = [
@@ -12,8 +14,8 @@ export const routes: Routes = [
         pathMatch: 'full',
     },
     {
-        path: 'home',
-        component: HomeComponent,
+        path: 'inicio',
+        component: InicioComponent,
         canActivate: [loggedGuard],
     },
     {
@@ -24,4 +26,14 @@ export const routes: Routes = [
         path: 'registro',
         component: RegistroUsuarioPage,
     },
+    {
+        path: 'confirmar-circuito',
+        component: ConfirmarCircuitoComponent,
+    },   
+    {
+        path: 'votar',
+        loadComponent: () =>
+            import('./pages/votar/votar.component').then((m) => m.VotarComponent),
+        canActivate: [loggedGuard, circuitoConfirmadoGuard]
+    }
 ];

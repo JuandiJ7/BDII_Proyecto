@@ -1,0 +1,16 @@
+<div class="confirmar-container">
+  <h2>Confirmá el circuito en el que vas a votar</h2>
+
+  <div class="datos-usuario">
+    <p><strong>Nombre:</strong> {{ nombre }}</p>
+    <p><strong>Apellido:</strong> {{ apellido }}</p>
+    <p><strong>Circuito asignado:</strong> {{ circuitoAsignado }}</p>
+  </div>
+
+  <form (ngSubmit)="confirmarCircuito()" #f="ngForm">
+    <label for="circuito">Ingresá el número de circuito donde vas a votar:</label>
+    <input type="number" [(ngModel)]="circuitoIngresado" name="circuito" required />
+
+    <button type="submit">Confirmar</button>
+  </form>
+</div>
