@@ -1,7 +1,10 @@
 <header class="header">
   <h1>🗳️ Sistema de Votación</h1>
   <nav>
-    <a routerLink="/home" routerLinkActive="active">Inicio</a>
-    <a *ngIf="fetchService.loggedUser()" routerLink="/votar" routerLinkActive="active">Votar</a>
+    <a routerLink="/inicio">Inicio</a>
+    <a *ngIf="authService.isAuthenticated()" (click)="cerrarSesion()" style="cursor: pointer;">
+      Cerrar sesión
+    </a>
+
   </nav>
 </header>

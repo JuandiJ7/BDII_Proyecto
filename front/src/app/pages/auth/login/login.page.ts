@@ -23,7 +23,7 @@ export class LoginPage {
     const credencial = `${this.serie}${this.numero}`.toUpperCase();
     const response = await this.auth.login(credencial, this.password);
     if (response) {
-      await this.router.navigate(['/home']);
+      await this.router.navigate(['/inicio']);
     } else {
       this.errorMessage = 'Las credenciales son incorrectas';
     }

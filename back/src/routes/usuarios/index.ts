@@ -133,6 +133,53 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       return rows[0];
     }
   );
+
+  fastify.get("/:credencial", {
+    schema: {
+      params: Type.Object({
+        credencial: Type.String(),
+      }),
+      response: {
+        200: Type.Object({
+          nombre: Type.String(),
+          apellido: Type.String(),
+          circuito: Type.String(),
+          departamento: Type.String(),
+          direccion_establecimiento: Type.String(),
+        }),
+        404: Type.Object({
+          message: Type.String(),
+        }),
+      },
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const { credencial } = request.params as { credencial: string };
+
+      const [rows]: any[] = await db.query(
+        `SELECT 
+          ci.nombres AS nombre,
+          CONCAT(ci.apellido1, ' ', ci.apellido2) AS apellido,
+          c.numero AS circuito,
+          d.nombre AS departamento,
+          e.direccion AS direccion_establecimiento
+        FROM CIUDADANO ci
+        JOIN PADRON p ON ci.credencial = p.credencial
+        JOIN CIRCUITO c ON p.id_circuito = c.id
+        JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+        JOIN LOCALIDAD l ON e.id_localidad = l.id
+        JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+        WHERE ci.credencial = ?`,
+        [credencial]
+      );
+
+      if (rows.length === 0) {
+        return reply.status(404).send({ message: "Ciudadano no encontrado" });
+      }
+
+      return rows[0];
+    }
+  });
 };
 
 export default usuariosRoutes;

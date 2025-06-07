@@ -52,7 +52,7 @@ const authRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         delete usuario.password;
 
         const token = fastify.jwt.sign(usuario);
-        reply.send({ token });
+        reply.send({ token, usuario });
       } catch (error) {
         console.error("Error en login:", error);
         return reply.internalServerError("Error interno al intentar loguear.");

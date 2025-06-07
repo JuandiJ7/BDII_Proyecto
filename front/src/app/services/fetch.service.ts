@@ -12,6 +12,10 @@ export class FetchService {
     return !!this.token;
   }
 
+  getToken(): string | undefined {
+    return this.token;
+  }
+
   setToken(token: string) {
     this.token = token;
   }
