@@ -53,16 +53,16 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   });
 
 
-  fastify.post('/verificar', {
+  fastify.get('/verificar', {
     schema: {
-      body: Type.Object({
+      querystring: Type.Object({
         credencial: Type.String(),
-        cedula: Type.String(),
       }),
       response: {
         200: Type.Object({
           nombre: Type.String(),
           apellido: Type.String(),
+          cedula: Type.String(),
           circuito: Type.String(),
           departamento: Type.String(),
           direccion_establecimiento: Type.String(),
@@ -70,15 +70,16 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
     },
     handler: async function (
-      request: FastifyRequest<{ Body: { credencial: string; cedula: string } }>,
+      request: FastifyRequest<{ Querystring: { credencial: string } }>,
       reply
     ) {
-      const { credencial, cedula } = request.body;
+      const { credencial } = request.query;
 
       const [rows]: any[] = await db.query(
         `SELECT 
           ci.nombres AS nombre,
           CONCAT(ci.apellido1, ' ', ci.apellido2) AS apellido,
+          ci.cedula AS cedula,
           c.numero AS circuito,
           d.nombre AS departamento,
           e.direccion AS direccion_establecimiento
@@ -88,8 +89,8 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
         JOIN LOCALIDAD l ON e.id_localidad = l.id
         JOIN DEPARTAMENTO d ON l.id_departamento = d.id
-        WHERE ci.credencial = ? AND ci.cedula = ?`,
-        [credencial, cedula]
+        WHERE ci.credencial = ?`,
+        [credencial]
       );
 
       if (rows.length === 0) {
@@ -109,6 +110,7 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         response: {
           200: Type.Object({
             credencial: Type.String(),
+            rol: Type.String(),
           }),
           404: Type.Object({
             message: Type.String(),
@@ -123,8 +125,6 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         `SELECT credencial, rol FROM USUARIO WHERE credencial = ?`,
         [credencial]
       );
-
-      console.log(rows)
 
       if (rows.length === 0) {
         return reply.status(204).send({ message: "No registrado" });
@@ -143,6 +143,7 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         200: Type.Object({
           nombre: Type.String(),
           apellido: Type.String(),
+          cedula: Type.String(),
           circuito: Type.String(),
           departamento: Type.String(),
           direccion_establecimiento: Type.String(),
@@ -160,6 +161,7 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         `SELECT 
           ci.nombres AS nombre,
           CONCAT(ci.apellido1, ' ', ci.apellido2) AS apellido,
+          ci.cedula AS cedula,
           c.numero AS circuito,
           d.nombre AS departamento,
           e.direccion AS direccion_establecimiento

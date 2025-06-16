@@ -35,5 +35,11 @@ export const routes: Routes = [
         loadComponent: () =>
             import('./pages/votar/votar.component').then((m) => m.VotarComponent),
         canActivate: [loggedGuard, circuitoConfirmadoGuard]
+    },
+    {
+        path: 'resultados',
+        loadComponent: () =>
+            import('./pages/resultados/resultados.component').then((m) => m.ResultadosComponent),
+        canActivate: [loggedGuard]
     }
 ];

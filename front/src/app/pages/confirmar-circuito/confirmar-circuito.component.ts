@@ -1,58 +1,54 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import Swal from 'sweetalert2';
-import { AuthService } from '../../services/auth.service';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+
+interface Usuario {
+  nombre: string;
+  apellido: string;
+  circuito: string;
+  departamento: string;
+  direccion_establecimiento: string;
+  rol?: string;
+}
 
 @Component({
   selector: 'app-confirmar-circuito',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './confirmar-circuito.component.html',
-  styleUrls: ['./confirmar-circuito.component.css'],
-  imports: [FormsModule],
-  standalone: true
+  styleUrls: ['./confirmar-circuito.component.css']
 })
-export class ConfirmarCircuitoComponent {
+export class ConfirmarCircuitoComponent implements OnInit {
   nombre: string = '';
   apellido: string = '';
-  circuitoAsignado: number = 0;
+  circuito: string = '';
+  departamento: string = '';
+  direccion_establecimiento: string = '';
   circuitoIngresado: number = 0;
+  circuitoAsignado: string = '';
 
-  constructor(private router: Router, private authService: AuthService) {
-    this.cargarDatosUsuario();
-  }
+  constructor(
+    private router: Router,
+    private authService: AuthService
+  ) { }
 
-  async cargarDatosUsuario() {
+  async ngOnInit(): Promise<void> {
     const usuario = await this.authService.getUsuarioActual();
     if (usuario) {
-      console.log(usuario)
-      this.nombre = usuario.nombre || usuario.nombres;
-      this.apellido = usuario.apellido || usuario.apellido1 + ' ' + (usuario.apellido2 || '');
-      this.circuitoAsignado = +usuario.circuito;
+      this.nombre = usuario.nombre;
+      this.apellido = usuario.apellido;
+      this.circuito = usuario.circuito;
+      this.departamento = usuario.departamento;
+      this.direccion_establecimiento = usuario.direccion_establecimiento;
     }
+    this.circuitoAsignado = 'Circuito 1'; // Temporal, reemplazar con el valor real
   }
 
-  confirmarCircuito() {
-    const observado = this.circuitoIngresado !== this.circuitoAsignado;
+  confirmarCircuito(): void {
+    const observado = this.circuitoIngresado !== parseInt(this.circuito);
     localStorage.setItem('observado', observado.toString());
-
-    if (observado) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Circuito incorrecto',
-        text: 'Estás votando en un circuito que no te corresponde. Tu voto será observado.',
-        confirmButtonText: 'Continuar',
-      }).then(() => {
-        this.router.navigate(['/votar']);
-      });
-    } else {
-      Swal.fire({
-        icon: 'success',
-        title: 'Circuito confirmado',
-        text: 'Podés continuar con la votación.',
-        confirmButtonText: 'Continuar',
-      }).then(() => {
-        this.router.navigate(['/votar']);
-      });
-    }
+    this.router.navigate(['/votar']);
   }
 }

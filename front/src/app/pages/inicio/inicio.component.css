@@ -1,0 +1,33 @@
+.acciones-comunes,
+.seccion-rol {
+  background-color: #f0f0f0; /* Un fondo ligeramente diferente para los grupos */
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem; /* Espacio entre los grupos */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.acciones-comunes h3,
+.seccion-rol h3 {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.botones-grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem; /* Espacio entre los botones dentro de un grupo */
+  justify-content: center; /* Centrar los botones dentro del grupo */
+  align-items: center;
+}
+
+.botones-grupo button {
+  width: 200px; /* Ancho fijo para consistencia */
+  flex-shrink: 0; /* Evita que los botones se encojan */
+  flex-grow: 0; /* Evita que los botones crezcan y se estiren */
+  padding: 1rem;
+  font-size: 1.1rem;
+  box-sizing: border-box;
+}
