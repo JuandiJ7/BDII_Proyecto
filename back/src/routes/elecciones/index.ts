@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
 import db from "../../services/db.js";
+import { UsuarioLoginType } from "../../types/usuarioLogin.js";
 
 const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   // Obtener todos los partidos con presidente y vicepresidente
@@ -109,7 +110,8 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     onRequest: [fastify.verifyJWT],
     handler: async function (request, reply) {
       const { idPartido } = request.params as { idPartido: number };
-      const credencial = request.user.cc;
+      const usuario = request.user as unknown as UsuarioLoginType;
+      const credencial = usuario.credencial;
 
       // Obtener el departamento del ciudadano
       const [departamentoRows]: any[] = await db.query(
@@ -245,7 +247,7 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
   });
 
-  // Obtener todas las papeletas (incluye plebiscitos)
+  // Obtener todas las papeletas
   fastify.get("/papeletas", {
     schema: {
       tags: ["elecciones"],

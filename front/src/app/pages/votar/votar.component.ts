@@ -134,6 +134,10 @@ export class VotarComponent implements OnInit {
       this.listas = response || [];
       this.listasFiltradas = this.listas;
       console.log('Listas cargadas:', this.listas);
+      
+      if (this.listas.length === 0) {
+        alert('No hay listas disponibles para este partido en tu departamento');
+      }
     } catch (error) {
       console.error('Error al cargar listas:', error);
       if (error instanceof Error && error.message.includes('401')) {
