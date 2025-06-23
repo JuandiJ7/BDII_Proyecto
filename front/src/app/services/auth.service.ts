@@ -5,6 +5,7 @@ type Usuario = {
   nombre: string;
   apellido: string;
   cedula: string;
+  credencial: string;
   circuito: string;
   departamento: string;
   direccion_establecimiento: string;
@@ -74,6 +75,7 @@ export class AuthService {
         console.log('Ciudadano obtenido:', ciudadano);
         
         if (ciudadano) {
+          ciudadano.credencial = credencial;
           // Obtener el rol del usuario
           try {
             const rolResponse = await this.fetchService.get<{rol: string}>(`usuarios/verificar/${credencial}`);

@@ -83,4 +83,8 @@ export class InicioComponent implements OnInit {
     console.log('Cerrar mesa');
     // Lógica para cerrar mesa
   }
+
+  validarVotante(): void {
+    this.router.navigate(['/confirmar-circuito']);
+  }
 }

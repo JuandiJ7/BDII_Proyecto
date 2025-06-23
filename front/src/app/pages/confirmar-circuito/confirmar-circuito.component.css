@@ -1,39 +1,177 @@
 .confirmar-container {
-  max-width: 500px;
-  margin: 3rem auto;
+  max-width: 800px;
+  margin: 2rem auto;
   padding: 2rem;
-  background-color: #f3f3f3;
+  background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.datos-usuario {
-  margin-bottom: 1.5rem;
+.datos-funcionario {
+  background-color: #f8f9fa;
   padding: 1rem;
-  background-color: #ffffff;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  border-radius: 6px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #007bff;
 }
 
-form label {
+.datos-funcionario h3 {
+  margin-top: 0;
+  color: #007bff;
+}
+
+.formulario-validacion {
+  margin-bottom: 2rem;
+}
+
+.formulario-validacion h3 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.campo-busqueda {
+  margin-bottom: 1.5rem;
+}
+
+.campo-busqueda label {
   display: block;
-  margin-top: 1rem;
-  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
 }
 
-form input[type="number"] {
-  width: 100%;
-  padding: 0.5rem;
-  margin-top: 0.3rem;
-  box-sizing: border-box;
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
-button {
-  margin-top: 1.5rem;
-  padding: 0.6rem 1.2rem;
-  background-color: #2196f3;
+.input-group input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.input-group button {
+  padding: 0.75rem 1.5rem;
+  background-color: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 1rem;
+}
+
+.input-group button:hover {
+  background-color: #0056b3;
+}
+
+.mensajes {
+  margin-bottom: 1rem;
+}
+
+.mensajes .error {
+  color: #dc3545;
+  background-color: #f8d7da;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #f5c6cb;
+  margin: 0;
+}
+
+.mensajes .exito {
+  color: #155724;
+  background-color: #d4edda;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #c3e6cb;
+  margin: 0;
+}
+
+.votante-info {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.votante-info h4 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 0.5rem;
+}
+
+.datos-votante p {
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+.estado-circuito {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 4px;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+
+.estado-circuito.observado {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+}
+
+.estado-circuito p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.estado-circuito.observado p {
+  color: #856404;
+}
+
+.estado-circuito:not(.observado) p {
+  color: #155724;
+}
+
+.acciones {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.btn-validar {
+  padding: 0.75rem 2rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.btn-validar:hover {
+  background-color: #218838;
+}
+
+.acciones-principales {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.btn-volver {
+  padding: 0.75rem 2rem;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btn-volver:hover {
+  background-color: #545b62;
 }

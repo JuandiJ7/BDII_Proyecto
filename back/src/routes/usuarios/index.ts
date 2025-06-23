@@ -3,6 +3,7 @@ import { Type } from "@sinclair/typebox";
 import {
   UsuarioSchema,
 } from "../../types/usuario.js";
+import { UsuarioLoginType } from "../../types/usuarioLogin.js";
 import * as usuarioService from "../../services/usuarios.js";
 import db from "./../../services/db.js";
 
@@ -181,6 +182,103 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
 
       return rows[0];
     }
+  });
+
+  fastify.post("/validar-votante", {
+    schema: {
+      body: Type.Object({
+        credencialVotante: Type.String(),
+      }),
+      tags: ["usuarios"],
+      summary: "Validar votante por funcionario",
+      description: "Permite a un funcionario validar un votante para su circuito",
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      const { credencialVotante } = request.body as { credencialVotante: string };
+
+      // Verificar que el usuario sea funcionario
+      if (usuario.rol !== 'FUNCIONARIO') {
+        return reply.forbidden('Solo los funcionarios pueden validar votantes');
+      }
+
+      try {
+        // Obtener datos del funcionario (circuito)
+        const [funcionarioRows]: any[] = await db.query(
+          `SELECT 
+            c.numero AS circuito
+          FROM CIUDADANO ci
+          JOIN PADRON p ON ci.credencial = p.credencial
+          JOIN CIRCUITO c ON p.id_circuito = c.id
+          WHERE ci.credencial = ?`,
+          [usuario.credencial]
+        );
+
+        if (funcionarioRows.length === 0) {
+          return reply.notFound('Funcionario no encontrado en el padrón');
+        }
+
+        const circuitoFuncionario = funcionarioRows[0].circuito;
+
+        // Obtener datos del votante y su estado en PADRON
+        const [votanteRows]: any[] = await db.query(
+          `SELECT 
+            ci.nombres AS nombre,
+            CONCAT(ci.apellido1, ' ', ci.apellido2) AS apellido,
+            ci.cedula AS cedula,
+            ci.credencial,
+            c.numero AS circuito,
+            p.habilitado,
+            p.observado,
+            p.voto
+          FROM CIUDADANO ci
+          JOIN PADRON p ON ci.credencial = p.credencial
+          JOIN CIRCUITO c ON p.id_circuito = c.id
+          WHERE ci.credencial = ?`,
+          [credencialVotante]
+        );
+
+        if (votanteRows.length === 0) {
+          return reply.notFound('Votante no encontrado');
+        }
+
+        const votante = votanteRows[0];
+
+        // Verificar si el votante ya votó
+        if (votante.voto) {
+          return reply.badRequest('El votante ya ha emitido su voto y no puede ser habilitado nuevamente');
+        }
+
+        // Determinar si es observado
+        const esObservado = votante.circuito !== circuitoFuncionario;
+
+        // Actualizar el padrón
+        await db.query(
+          `UPDATE PADRON SET habilitado = true, observado = ? WHERE credencial = ?`,
+          [esObservado, credencialVotante]
+        );
+
+        return {
+          success: true,
+          votante: {
+            nombre: votante.nombre,
+            apellido: votante.apellido,
+            cedula: votante.cedula,
+            credencial: votante.credencial,
+            circuito: votante.circuito
+          },
+          esObservado: esObservado,
+          mensaje: esObservado 
+            ? 'Votante habilitado como observado (circuito diferente)'
+            : 'Votante habilitado correctamente'
+        };
+
+      } catch (error) {
+        console.error('Error al validar votante:', error);
+        return reply.internalServerError('Error interno al validar votante');
+      }
+    },
   });
 };
 

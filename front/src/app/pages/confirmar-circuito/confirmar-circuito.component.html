@@ -1,16 +1,64 @@
 <div class="confirmar-container">
-  <h2>Confirmá el circuito en el que vas a votar</h2>
+  <h2>Validar Votante</h2>
 
-  <div class="datos-usuario">
-    <p><strong>Nombre:</strong> {{ nombre }}</p>
-    <p><strong>Apellido:</strong> {{ apellido }}</p>
-    <p><strong>Circuito asignado:</strong> {{ circuitoAsignado }}</p>
+  <div class="datos-funcionario">
+    <h3>Datos del Funcionario</h3>
+    <p><strong>Nombre:</strong> {{ nombre }} {{ apellido }}</p>
+    <p><strong>Circuito:</strong> {{ circuito }}</p>
+    <p><strong>Departamento:</strong> {{ departamento }}</p>
   </div>
 
-  <form (ngSubmit)="confirmarCircuito()" #f="ngForm">
-    <label for="circuito">Ingresá el número de circuito donde vas a votar:</label>
-    <input type="number" [(ngModel)]="circuitoIngresado" name="circuito" required />
+  <div class="formulario-validacion">
+    <h3>Validar Votante</h3>
+    
+    <div class="campo-busqueda">
+      <label for="credencial">Ingrese la credencial del votante:</label>
+      <div class="input-group">
+        <input 
+          type="text" 
+          [(ngModel)]="credencialVotante" 
+          name="credencial" 
+          placeholder="Ej: ABC12345"
+          required 
+        />
+        <button type="button" (click)="buscarVotante()">Buscar</button>
+      </div>
+    </div>
 
-    <button type="submit">Confirmar</button>
-  </form>
+    <!-- Mensajes de error y éxito -->
+    <div class="mensajes">
+      <p class="error" *ngIf="mensaje">{{ mensaje }}</p>
+      <p class="exito" *ngIf="exito">{{ exito }}</p>
+    </div>
+
+    <!-- Información del votante encontrado -->
+    <div class="votante-info" *ngIf="votanteEncontrado">
+      <h4>Datos del Votante</h4>
+      <div class="datos-votante">
+        <p><strong>Nombre:</strong> {{ votanteEncontrado.nombre }} {{ votanteEncontrado.apellido }}</p>
+        <p><strong>Cédula:</strong> {{ votanteEncontrado.cedula }}</p>
+        <p><strong>Credencial:</strong> {{ votanteEncontrado.credencial }}</p>
+        <p><strong>Circuito:</strong> {{ votanteEncontrado.circuito }}</p>
+        
+        <div class="estado-circuito" [class.observado]="esObservado">
+          <p *ngIf="esObservado">
+            <strong>⚠️ Voto Observado:</strong> El votante pertenece a un circuito diferente
+          </p>
+          <p *ngIf="!esObservado">
+            <strong>✅ Circuito Coincide:</strong> El votante pertenece a este circuito
+          </p>
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button type="button" (click)="validarVotante()" class="btn-validar">
+          {{ esObservado ? 'Habilitar Voto Observado' : 'Habilitar Votante' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="acciones-principales">
+    <button type="button" (click)="volverInicio()" class="btn-volver">Volver al Inicio</button>
+  </div>
 </div>

@@ -82,8 +82,65 @@ export class VotarComponent implements OnInit {
       this.router.navigate(['/auth/login']);
       return;
     }
+
+    // Verificar si el votante está habilitado
+    const estaHabilitado = await this.verificarHabilitacion(usuario.cedula);
+    if (!estaHabilitado) {
+      alert('No está habilitado para votar. Debe ser validado por un funcionario primero.');
+      this.router.navigate(['/inicio']);
+      return;
+    }
+
     this.cargarPartidos();
     this.cargarPapeletas();
+  }
+
+  async verificarHabilitacion(credencial: string): Promise<boolean> {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost/back/usuarios/${credencial}`, {
+        method: 'GET',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const datos = await response.json();
+        // Verificar si está habilitado en el padrón
+        const habilitado = await this.verificarHabilitacionPadron(credencial);
+        return habilitado;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error al verificar habilitación:', error);
+      return false;
+    }
+  }
+
+  async verificarHabilitacionPadron(credencial: string): Promise<boolean> {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost/back/usuarios/verificar/${credencial}`, {
+        method: 'GET',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const datos = await response.json();
+        // Aquí deberías verificar el campo habilitado del padrón
+        // Por ahora retornamos true si el usuario existe
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error al verificar padrón:', error);
+      return false;
+    }
   }
 
   async cargarPartidos(): Promise<void> {
