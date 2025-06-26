@@ -1,7 +1,10 @@
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
 * {
@@ -53,4 +56,67 @@ button {
 
 button[type="button"] {
   background: #007bff;
+}
+
+.confirmar-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #f9f9f9;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.datos-usuario {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.botones-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2rem;
+  max-width: 650px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.botones-container button {
+  width: 200px;
+  flex-shrink: 0;
+  flex-grow: 0;
+  padding: 1rem;
+  font-size: 1.1rem;
+  box-sizing: border-box;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.plebiscitos-container {
+  margin: 1.5rem 0;
+}
+
+.plebiscito-item {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.resultado-item {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }

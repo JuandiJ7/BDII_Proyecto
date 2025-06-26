@@ -1,0 +1,167 @@
+.confirmar-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+/* Estilos para voto en blanco */
+.voto-blanco-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.voto-blanco-checkbox {
+  width: 100%;
+}
+
+.voto-blanco-descripcion {
+  font-size: 0.9em;
+  color: #666;
+  margin-top: 0.5rem;
+  font-weight: normal;
+}
+
+/* Separador */
+.separador {
+  text-align: center;
+  margin: 2rem 0;
+  position: relative;
+}
+
+.separador::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #ddd;
+  z-index: 1;
+}
+
+.separador span {
+  background-color: #fff;
+  padding: 0 1rem;
+  color: #666;
+  font-size: 0.9em;
+  position: relative;
+  z-index: 2;
+}
+
+/* Estilos para los selectores de Material */
+::ng-deep .mat-mdc-select-panel {
+  max-height: 400px !important;
+}
+
+::ng-deep .mat-mdc-option {
+  height: auto !important;
+  padding: 8px 16px !important;
+  line-height: 1.2 !important;
+}
+
+/* Estilos para las opciones de partido */
+.partido-option {
+  padding: 8px 0;
+}
+
+.partido-nombre {
+  font-size: 1.1em;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.partido-info {
+  font-size: 0.9em;
+  color: #666;
+  margin-top: 4px;
+}
+
+.partido-info div {
+  margin: 2px 0;
+}
+
+/* Estilos para las opciones de lista */
+.lista-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.lista-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.lista-numero {
+  font-weight: 500;
+}
+
+.lista-departamento {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.info-button {
+  margin-left: 8px;
+}
+
+/* Estilos para plebiscitos */
+.plebiscitos-container {
+  margin: 2rem 0;
+}
+
+.plebiscito-item {
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.plebiscito-item:hover {
+  background-color: #f5f5f5;
+}
+
+.plebiscito-item.votado {
+  background-color: #e8f5e9;
+  border-color: #4caf50;
+}
+
+.estado-voto {
+  float: right;
+  color: #666;
+}
+
+.estado-voto.votado {
+  color: #4caf50;
+}
+
+button[type="submit"] {
+  width: 100%;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Estilos para el botón de info en las listas */
+mat-icon-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}

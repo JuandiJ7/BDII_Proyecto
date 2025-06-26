@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
 import { Router } from '@angular/router';
+import { AuthService } from '../../../../services/auth.service';
 
 @Component({
   selector: 'app-formulario-usuario',
@@ -27,7 +28,10 @@ export class FormularioUsuarioComponent {
   mensaje = '';
   exito = '';
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService
+  ) {}
 
   async verificarDatos() {
     const credencial = (this.serie + this.numero).toUpperCase();
@@ -62,14 +66,24 @@ export class FormularioUsuarioComponent {
   }
 
   async buscarDatos(credencial: string, ci: string) {
-    const res = await fetch('http://localhost/back/usuarios/verificar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credencial, cedula: ci })
-    });
+    try {
+      const res = await fetch(`http://localhost/back/usuarios/verificar?credencial=${credencial}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-    if (!res.ok) return null;
-    return await res.json();
+      if (!res.ok) return null;
+      
+      const datos = await res.json();
+      // Verificar que la cédula coincida
+      if (datos && datos.cedula === ci) {
+        return datos;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error al buscar datos:', error);
+      return null;
+    }
   }
 
   async verificarUsuarioExistente(credencial: string): Promise<boolean> {
@@ -124,17 +138,25 @@ export class FormularioUsuarioComponent {
       });
       
       if (response.status === 201) {
-      this.exito = 'Usuario registrado correctamente.';
-      
-      setTimeout(() => {
-        this.router.navigate(['/home']);
-      }, 2000); // redirigir en 2 segundos
-
-    } else {
-      const error = await response.json();
-      this.mensaje = error?.message || 'Error al registrar el usuario.';
-    }
-    
+        this.exito = 'Usuario registrado correctamente.';
+        
+        // Hacer login automático
+        const loginExitoso = await this.authService.login(credencial, this.password);
+        
+        if (loginExitoso) {
+          setTimeout(() => {
+            this.router.navigate(['/inicio']);
+          }, 2000);
+        } else {
+          this.mensaje = 'Usuario registrado pero no se pudo iniciar sesión. Por favor, inicie sesión manualmente.';
+          setTimeout(() => {
+            this.router.navigate(['/auth/login']);
+          }, 2000);
+        }
+      } else {
+        const error = await response.json();
+        this.mensaje = error?.message || 'Error al registrar el usuario.';
+      }
     } catch (error) {
       console.error('Error al registrar:', error);
       this.mensaje = 'No se pudo registrar. Verificá los datos o intenta más tarde.';

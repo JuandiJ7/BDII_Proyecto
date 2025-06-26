@@ -5,6 +5,7 @@ import { RegistroUsuarioPage } from './pages/registro-usuario/registro-usuario.p
 import { ConfirmarCircuitoComponent } from './pages/confirmar-circuito/confirmar-circuito.component';
 import { InicioComponent } from './pages/inicio/inicio.component';
 import { circuitoConfirmadoGuard } from './guards/circuito-confirmado.guard';
+import { HabilitacionGuard } from './guards/habilitacion.guard';
 
 
 export const routes: Routes = [
@@ -35,5 +36,11 @@ export const routes: Routes = [
         loadComponent: () =>
             import('./pages/votar/votar.component').then((m) => m.VotarComponent),
         canActivate: [loggedGuard, circuitoConfirmadoGuard]
+    },
+    {
+        path: 'resultados',
+        loadComponent: () =>
+            import('./pages/resultados/resultados.component').then((m) => m.ResultadosComponent),
+        canActivate: [loggedGuard]
     }
 ];

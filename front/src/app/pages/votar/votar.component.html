@@ -1,1 +1,87 @@
-<p>votar works!</p>
+<div class="confirmar-container">
+  <h2>Votación</h2>
+
+  <form (ngSubmit)="confirmarVoto()" #f="ngForm">
+    <!-- Opción de Voto en Blanco -->
+    <div class="voto-blanco-section">
+      <mat-checkbox 
+        [(ngModel)]="votoEnBlanco" 
+        name="votoEnBlanco"
+        (change)="onVotoEnBlancoChange()"
+        class="voto-blanco-checkbox">
+        <strong>Voto en Blanco</strong>
+        <div class="voto-blanco-descripcion">
+          Seleccione esta opción si desea emitir un voto en blanco
+        </div>
+      </mat-checkbox>
+    </div>
+
+    <!-- Separador -->
+    <div class="separador" *ngIf="!votoEnBlanco">
+      <span>O seleccione un partido y lista</span>
+    </div>
+
+    <!-- Selección de Partido -->
+    <mat-form-field appearance="fill" class="full-width" *ngIf="!votoEnBlanco">
+      <mat-label>Selecciona un partido</mat-label>
+      <mat-select [(ngModel)]="partidoSeleccionado" name="partido" required (selectionChange)="onPartidoChange()">
+        <mat-option *ngFor="let partido of partidos" [value]="partido.id">
+          <div class="partido-option">
+            <div class="partido-nombre">{{ partido.nombre }}</div>
+            <div class="partido-info" *ngIf="partido.presidente || partido.vicepresidente">
+              <div *ngIf="partido.presidente">
+                <strong>Presidente:</strong> {{ partido.presidente.nombres }} {{ partido.presidente.apellidos }}
+              </div>
+              <div *ngIf="partido.vicepresidente">
+                <strong>Vicepresidente:</strong> {{ partido.vicepresidente.nombres }} {{ partido.vicepresidente.apellidos }}
+              </div>
+            </div>
+          </div>
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="!partidoSeleccionado && !votoEnBlanco">Debe seleccionar un partido</mat-error>
+    </mat-form-field>
+
+    <!-- Selección de Lista -->
+    <mat-form-field appearance="fill" class="full-width" *ngIf="partidoSeleccionado && !votoEnBlanco">
+      <mat-label>Selecciona una lista</mat-label>
+      <mat-select [(ngModel)]="listaSeleccionada" name="lista" required>
+        <mat-option *ngFor="let lista of listasFiltradas" [value]="lista.id">
+          <div class="lista-option">
+            <div class="lista-info">
+              <span class="lista-numero">Lista {{ lista.numero }}</span>
+              <span class="lista-departamento">{{ lista.nombre_departamento }}</span>
+            </div>
+            <button mat-icon-button (click)="verDetallesLista(lista); $event.stopPropagation()" class="info-button">
+              <mat-icon>info</mat-icon>
+            </button>
+          </div>
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="!listaSeleccionada && !votoEnBlanco">Debe seleccionar una lista</mat-error>
+    </mat-form-field>
+
+    <!-- Plebiscitos -->
+    <div class="plebiscitos-container">
+      <h3>Papeletas</h3>
+      <div *ngFor="let papeleta of papeletas" 
+           class="plebiscito-item" 
+           [class.votado]="papeleta.votado"
+           (click)="togglePapeleta(papeleta)">
+        <p>
+          <strong>{{ papeleta.nombre }}</strong>
+          <span class="estado-voto" [class.votado]="papeleta.votado">
+            {{ papeleta.votado ? '✓ Votado' : 'No votado' }}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <button mat-raised-button color="primary" type="submit" 
+            [disabled]="(!votoEnBlanco && (!partidoSeleccionado || !listaSeleccionada))">
+      <mat-icon>how_to_vote</mat-icon>
+      {{ votoEnBlanco ? 'Confirmar Voto en Blanco' : 'Confirmar Voto' }}
+    </button>
+  </form>
+</div>
+

@@ -23,7 +23,7 @@ export default fp<FastifyJWTOptions>(async (fastify) => {
     "verifyAdmin",
     async function (request: FastifyRequest, reply: FastifyReply) {
       const usuarioToken = request.user as unknown as UsuarioLoginType;
-      if (usuarioToken.rol !== "admin") {
+      if (usuarioToken.rol !== "ADMIN") {
         throw reply.unauthorized("Tienes que ser admin para hacer eso.");
       }
     }
@@ -47,7 +47,7 @@ export default fp<FastifyJWTOptions>(async (fastify) => {
       const usuarioToken = request.user as unknown as UsuarioLoginType;
       const { cc } = request.params as IdCiudadanoType;
 
-      if (usuarioToken.rol !== "admin" && usuarioToken.credencial !== cc) {
+      if (usuarioToken.rol !== "ADMIN" && usuarioToken.credencial !== cc) {
         throw reply.unauthorized("Solo podés acceder a tu propio recurso o ser admin.");
       }
     }

@@ -1,1 +1,21 @@
-<p>resultados works!</p>
+<div class="confirmar-container">
+  <h2>Resultados de la Votación</h2>
+
+  <div class="resultados-candidatos">
+    <h3>Candidatos</h3>
+    <div *ngFor="let candidato of resultadosCandidatos" class="resultado-item">
+      <p><strong>{{ candidato.nombre }}:</strong> {{ candidato.votos }} votos</p>
+    </div>
+  </div>
+
+  <div class="resultados-plebiscitos">
+    <h3>Plebiscitos</h3>
+    <div *ngFor="let plebiscito of resultadosPlebiscitos" class="resultado-item">
+      <p><strong>{{ plebiscito.pregunta }}</strong></p>
+      <p>Sí: {{ plebiscito.votosSi }} votos</p>
+      <p>No: {{ plebiscito.votosNo }} votos</p>
+    </div>
+  </div>
+
+  <button mat-raised-button color="primary" (click)="volver()">Volver</button>
+</div>

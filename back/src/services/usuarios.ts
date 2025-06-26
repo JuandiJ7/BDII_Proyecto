@@ -50,7 +50,7 @@ export const create = async (credencial: string, password: string) => {
   const []: any = await db.query(
     `
     INSERT IGNORE INTO USUARIO (credencial, password, rol) VALUES
-    (?, ?, 'votante')
+    (?, ?, 'VOTANTE')
   `,
     [
       credencial,
@@ -60,6 +60,6 @@ export const create = async (credencial: string, password: string) => {
 
   return {
     credencial: credencial,
-    rol: "votante",
+    rol: "VOTANTE",
   };
 };

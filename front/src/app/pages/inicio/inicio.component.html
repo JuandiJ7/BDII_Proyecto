@@ -1,2 +1,50 @@
-<p>inicio works!</p>
-<a routerLink="/confirmar-circuito" routerLinkActive="active">votar</a>
+<div class="confirmar-container">
+  <h2>Sistema de Elecciones Electrónicas</h2>
+
+  <div class="datos-usuario" *ngIf="usuario">
+    <p><strong>Nombre:</strong> {{ usuario.nombre }} {{ usuario.apellido }}</p>
+    <p><strong>Cédula:</strong> {{ usuario.cedula }}</p>
+    <p><strong>Circuito:</strong> {{ usuario.circuito }}</p>
+    <p><strong>Rol:</strong> {{ usuario.rol }}</p>
+  </div>
+
+  <div class="acciones-comunes">
+    <h3>Acciones Generales</h3>
+    <div class="botones-grupo">
+      <button mat-raised-button color="primary" (click)="irAVotar()">Votar</button>
+      <button mat-raised-button color="accent" (click)="verResultados()">Acceder a Resultados</button>
+    </div>
+  </div>
+
+  <!-- Agrupación de botones específicos para ADMIN -->
+  <ng-container *ngIf="usuario?.rol === 'ADMIN'">
+    <div class="seccion-rol">
+      <h3>Gestión de Elecciones</h3>
+      <div class="botones-grupo">
+        <button mat-raised-button color="primary" (click)="abrirEleccion()">Abrir Elección</button>
+        <button mat-raised-button color="warn" (click)="cerrarEleccion()">Cerrar Elección</button>
+        <button mat-raised-button color="primary" (click)="crearEleccion()">Crear Elección</button>
+        <button mat-raised-button color="accent" (click)="editarEleccion()">Editar Elección</button>
+      </div>
+    </div>
+
+    <div class="seccion-rol">
+      <h3>Gestión de Configuración</h3>
+      <div class="botones-grupo">
+        <button mat-raised-button color="accent" (click)="editarCircuito()">Editar Circuito</button>
+        <button mat-raised-button color="accent" (click)="editarEstablecimiento()">Editar Establecimiento</button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Botones específicos para FUNCIONARIO (Integrante de mesa) -->
+  <ng-container *ngIf="usuario?.rol === 'FUNCIONARIO'">
+    <div class="seccion-rol">
+      <h3>Gestión de Mesa</h3>
+      <div class="botones-grupo">
+        <button mat-raised-button color="primary" (click)="validarVotante()">Validar Votante</button>
+        <button mat-raised-button color="warn" (click)="cerrarMesa()">Cerrar Mesa</button>
+      </div>
+    </div>
+  </ng-container>
+</div>
