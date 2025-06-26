@@ -1,9 +1,28 @@
 <div class="confirmar-container">
   <h2>Votación</h2>
 
-  <form (ngSubmit)="enviarVoto()" #f="ngForm">
+  <form (ngSubmit)="confirmarVoto()" #f="ngForm">
+    <!-- Opción de Voto en Blanco -->
+    <div class="voto-blanco-section">
+      <mat-checkbox 
+        [(ngModel)]="votoEnBlanco" 
+        name="votoEnBlanco"
+        (change)="onVotoEnBlancoChange()"
+        class="voto-blanco-checkbox">
+        <strong>Voto en Blanco</strong>
+        <div class="voto-blanco-descripcion">
+          Seleccione esta opción si desea emitir un voto en blanco
+        </div>
+      </mat-checkbox>
+    </div>
+
+    <!-- Separador -->
+    <div class="separador" *ngIf="!votoEnBlanco">
+      <span>O seleccione un partido y lista</span>
+    </div>
+
     <!-- Selección de Partido -->
-    <mat-form-field appearance="fill" class="full-width">
+    <mat-form-field appearance="fill" class="full-width" *ngIf="!votoEnBlanco">
       <mat-label>Selecciona un partido</mat-label>
       <mat-select [(ngModel)]="partidoSeleccionado" name="partido" required (selectionChange)="onPartidoChange()">
         <mat-option *ngFor="let partido of partidos" [value]="partido.id">
@@ -20,11 +39,11 @@
           </div>
         </mat-option>
       </mat-select>
-      <mat-error *ngIf="!partidoSeleccionado">Debe seleccionar un partido</mat-error>
+      <mat-error *ngIf="!partidoSeleccionado && !votoEnBlanco">Debe seleccionar un partido</mat-error>
     </mat-form-field>
 
     <!-- Selección de Lista -->
-    <mat-form-field appearance="fill" class="full-width" *ngIf="partidoSeleccionado">
+    <mat-form-field appearance="fill" class="full-width" *ngIf="partidoSeleccionado && !votoEnBlanco">
       <mat-label>Selecciona una lista</mat-label>
       <mat-select [(ngModel)]="listaSeleccionada" name="lista" required>
         <mat-option *ngFor="let lista of listasFiltradas" [value]="lista.id">
@@ -39,7 +58,7 @@
           </div>
         </mat-option>
       </mat-select>
-      <mat-error *ngIf="!listaSeleccionada">Debe seleccionar una lista</mat-error>
+      <mat-error *ngIf="!listaSeleccionada && !votoEnBlanco">Debe seleccionar una lista</mat-error>
     </mat-form-field>
 
     <!-- Plebiscitos -->
@@ -58,8 +77,10 @@
       </div>
     </div>
 
-    <button mat-raised-button color="primary" type="submit" [disabled]="!f.form.valid">
-      Enviar Voto
+    <button mat-raised-button color="primary" type="submit" 
+            [disabled]="(!votoEnBlanco && (!partidoSeleccionado || !listaSeleccionada))">
+      <mat-icon>how_to_vote</mat-icon>
+      {{ votoEnBlanco ? 'Confirmar Voto en Blanco' : 'Confirmar Voto' }}
     </button>
   </form>
 </div>

@@ -207,6 +207,7 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         // Obtener datos del funcionario (circuito)
         const [funcionarioRows]: any[] = await db.query(
           `SELECT 
+            c.id AS id_circuito,
             c.numero AS circuito
           FROM CIUDADANO ci
           JOIN PADRON p ON ci.credencial = p.credencial
@@ -219,7 +220,7 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           return reply.notFound('Funcionario no encontrado en el padrón');
         }
 
-        const circuitoFuncionario = funcionarioRows[0].circuito;
+        const funcionario = funcionarioRows[0];
 
         // Obtener datos del votante y su estado en PADRON
         const [votanteRows]: any[] = await db.query(
@@ -228,9 +229,10 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
             CONCAT(ci.apellido1, ' ', ci.apellido2) AS apellido,
             ci.cedula AS cedula,
             ci.credencial,
+            c.id AS id_circuito_original,
             c.numero AS circuito,
             p.habilitado,
-            p.observado,
+            p.circuito_final,
             p.voto
           FROM CIUDADANO ci
           JOIN PADRON p ON ci.credencial = p.credencial
@@ -250,13 +252,17 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           return reply.badRequest('El votante ya ha emitido su voto y no puede ser habilitado nuevamente');
         }
 
-        // Determinar si es observado
-        const esObservado = votante.circuito !== circuitoFuncionario;
+        // Determinar si es observado (circuito diferente al del funcionario)
+        const esObservado = votante.id_circuito_original !== funcionario.id_circuito;
+        
+        // Si es observado, establecer circuito_final al circuito del funcionario
+        // Si no es observado, mantener circuito_final como NULL (usa el original)
+        const circuitoFinal = esObservado ? funcionario.id_circuito : null;
 
         // Actualizar el padrón
         await db.query(
-          `UPDATE PADRON SET habilitado = true, observado = ? WHERE credencial = ?`,
-          [esObservado, credencialVotante]
+          `UPDATE PADRON SET habilitado = true, circuito_final = ? WHERE credencial = ?`,
+          [circuitoFinal, credencialVotante]
         );
 
         return {

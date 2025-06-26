@@ -38,6 +38,30 @@ export class EleccionesService {
     return this.fetchService.get(`${this.apiUrl}/papeletas`);
   }
 
+  // Obtener circuito del votante
+  async getCircuitoVotante(): Promise<any> {
+    console.log('Llamando a getCircuitoVotante');
+    return this.fetchService.get(`${this.apiUrl}/votante/circuito`);
+  }
+
+  // Verificar si el votante está habilitado
+  async verificarHabilitacion(): Promise<any> {
+    console.log('Llamando a verificarHabilitacion');
+    return this.fetchService.get(`${this.apiUrl}/votante/habilitado`);
+  }
+
+  // Debug: Verificar datos del votante
+  async debugVotante(): Promise<any> {
+    console.log('Llamando a debugVotante');
+    return this.fetchService.get(`${this.apiUrl}/votante/debug`);
+  }
+
+  // Registrar un voto
+  async registrarVoto(votoData: any): Promise<any> {
+    console.log('Llamando a registrarVoto con datos:', votoData);
+    return this.fetchService.post(`${this.apiUrl}/voto`, JSON.stringify(votoData));
+  }
+
   async enviarVoto(voto: any): Promise<any> {
     console.log('Llamando a enviarVoto con datos:', voto);
     return this.fetchService.post(`${this.apiUrl}/votos`, JSON.stringify(voto));

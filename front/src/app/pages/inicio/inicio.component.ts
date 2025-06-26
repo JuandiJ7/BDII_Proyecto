@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { EleccionesService } from '../../services/elecciones.service';
 
 type Usuario = {
   nombre: string;
@@ -27,7 +28,8 @@ export class InicioComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private eleccionesService: EleccionesService
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -39,8 +41,17 @@ export class InicioComponent implements OnInit {
     }
   }
 
-  irAVotar(): void {
-    this.router.navigate(['/votar']);
+  async irAVotar(): Promise<void> {
+    try {
+      const habilitacion = await this.eleccionesService.verificarHabilitacion();
+      if (!habilitacion.habilitado) {
+        alert(habilitacion.mensaje);
+        return;
+      }
+      this.router.navigate(['/votar']);
+    } catch (error) {
+      alert('Error al verificar habilitación. Intente nuevamente.');
+    }
   }
 
   verResultados(): void {

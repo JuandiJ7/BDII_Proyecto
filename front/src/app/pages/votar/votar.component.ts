@@ -6,11 +6,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { EleccionesService } from '../../services/elecciones.service';
 import { ListaDetallesComponent } from './lista-detalles/lista-detalles.component';
+import { ConfirmarVotoComponent } from './confirmar-voto/confirmar-voto.component';
 import { AuthService } from '../../services/auth.service';
 
 interface Partido {
@@ -52,7 +54,8 @@ interface Papeleta {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    MatDialogModule
+    MatDialogModule,
+    MatCheckboxModule
   ],
   providers: [provideAnimations()],
   templateUrl: './votar.component.html',
@@ -66,6 +69,7 @@ export class VotarComponent implements OnInit {
   partidoSeleccionado: number | null = null;
   listaSeleccionada: number | null = null;
   listasFiltradas: Lista[] = [];
+  votoEnBlanco = false;
 
   constructor(
     private router: Router,
@@ -84,63 +88,24 @@ export class VotarComponent implements OnInit {
     }
 
     // Verificar si el votante está habilitado
-    const estaHabilitado = await this.verificarHabilitacion(usuario.cedula);
-    if (!estaHabilitado) {
-      alert('No está habilitado para votar. Debe ser validado por un funcionario primero.');
+    try {
+      const habilitacion = await this.eleccionesService.verificarHabilitacion();
+      console.log('Resultado verificación habilitación:', habilitacion);
+      
+      if (!habilitacion.habilitado) {
+        alert(habilitacion.mensaje);
+        this.router.navigate(['/inicio']);
+        return;
+      }
+    } catch (error) {
+      console.error('Error al verificar habilitación:', error);
+      alert('Error al verificar habilitación. Intente nuevamente.');
       this.router.navigate(['/inicio']);
       return;
     }
 
     this.cargarPartidos();
     this.cargarPapeletas();
-  }
-
-  async verificarHabilitacion(credencial: string): Promise<boolean> {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost/back/usuarios/${credencial}`, {
-        method: 'GET',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const datos = await response.json();
-        // Verificar si está habilitado en el padrón
-        const habilitado = await this.verificarHabilitacionPadron(credencial);
-        return habilitado;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error al verificar habilitación:', error);
-      return false;
-    }
-  }
-
-  async verificarHabilitacionPadron(credencial: string): Promise<boolean> {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost/back/usuarios/verificar/${credencial}`, {
-        method: 'GET',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const datos = await response.json();
-        // Aquí deberías verificar el campo habilitado del padrón
-        // Por ahora retornamos true si el usuario existe
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error al verificar padrón:', error);
-      return false;
-    }
   }
 
   async cargarPartidos(): Promise<void> {
@@ -179,8 +144,21 @@ export class VotarComponent implements OnInit {
     }
   }
 
+  onVotoEnBlancoChange(): void {
+    if (this.votoEnBlanco) {
+      // Si selecciona voto en blanco, limpiar selecciones
+      this.partidoSeleccionado = null;
+      this.listaSeleccionada = null;
+      this.listas = [];
+      this.listasFiltradas = [];
+    }
+  }
+
   async onPartidoChange(): Promise<void> {
     if (!this.partidoSeleccionado) return;
+
+    // Si selecciona un partido, desmarcar voto en blanco
+    this.votoEnBlanco = false;
 
     try {
       console.log('Partido seleccionado:', this.partidoSeleccionado);
@@ -219,35 +197,60 @@ export class VotarComponent implements OnInit {
     console.log('Papeleta actualizada:', papeleta);
   }
 
-  async enviarVoto(): Promise<void> {
-    if (!this.partidoSeleccionado || !this.listaSeleccionada) {
-      alert('Por favor seleccione un partido y una lista');
+  async confirmarVoto(): Promise<void> {
+    // Validar que se haya seleccionado algo
+    if (!this.votoEnBlanco && (!this.partidoSeleccionado || !this.listaSeleccionada)) {
+      alert('Por favor seleccione un partido y una lista, o marque la opción de voto en blanco');
       return;
     }
 
-    try {
-      console.log('Enviando voto:', {
-        partidoId: this.partidoSeleccionado,
-        listaId: this.listaSeleccionada,
-        papeletas: this.papeletas.filter(p => p.votado)
-      });
+    let partidoSeleccionado = this.partidos.find(p => p.id === this.partidoSeleccionado);
+    let listaSeleccionada = this.listas.find(l => l.id === this.listaSeleccionada);
 
-      await this.eleccionesService.enviarVoto({
-        partidoId: this.partidoSeleccionado,
-        listaId: this.listaSeleccionada,
-        papeletas: this.papeletas.filter(p => p.votado)
-      });
-
-      alert('Voto registrado correctamente');
-      this.router.navigate(['/inicio']);
-    } catch (error) {
-      console.error('Error al enviar voto:', error);
-      if (error instanceof Error && error.message.includes('401')) {
-        console.error('Error de autenticación. Token inválido o expirado.');
-        this.router.navigate(['/auth/login']);
-      } else {
-        alert('Error al registrar el voto');
+    // Si es voto en blanco, obtener la lista del partido 12
+    if (this.votoEnBlanco) {
+      try {
+        console.log('Obteniendo lista de voto en blanco (partido 12)...');
+        const listasVotoBlanco = await this.eleccionesService.getListas(12);
+        console.log('Listas de voto en blanco:', listasVotoBlanco);
+        
+        if (listasVotoBlanco && listasVotoBlanco.length > 0) {
+          listaSeleccionada = listasVotoBlanco[0]; // Tomar la primera lista del departamento
+          partidoSeleccionado = { id: 12, nombre: 'Voto en Blanco', presidente: null, vicepresidente: null };
+        } else {
+          alert('Error: No se encontró la lista de voto en blanco');
+          return;
+        }
+      } catch (error) {
+        console.error('Error al obtener lista de voto en blanco:', error);
+        alert('Error al obtener la lista de voto en blanco');
+        return;
       }
     }
+
+    const papeletasSeleccionadas = this.papeletas.filter(p => p.votado);
+
+    const votoData = {
+      partido: partidoSeleccionado,
+      lista: listaSeleccionada,
+      papeletas: papeletasSeleccionadas,
+      esVotoEnBlanco: this.votoEnBlanco
+    };
+
+    // Abrir modal de confirmación
+    const dialogRef = this.dialog.open(ConfirmarVotoComponent, {
+      width: '600px',
+      data: votoData,
+      disableClose: true
+    });
+
+    // Manejar resultado del modal
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === true) {
+        // Voto confirmado exitosamente
+        alert('¡Voto registrado correctamente!');
+        this.router.navigate(['/inicio']);
+      }
+    });
   }
 }
