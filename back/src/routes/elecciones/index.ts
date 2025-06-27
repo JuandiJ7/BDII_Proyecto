@@ -673,6 +673,887 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
   });
 
   // Aquí se agregarán los otros endpoints: listas, integrantes, papeletas
+
+  // ==================== ENDPOINTS DE RESULTADOS ====================
+
+  // Obtener información del circuito (para funcionarios)
+  fastify.get("/resultados/circuito/info", {
+    schema: {
+      tags: ["resultados"],
+      summary: "Obtener información del circuito del funcionario",
+      response: {
+        200: Type.Object({
+          circuito: Type.Object({
+            id: Type.Number(),
+            numero: Type.String()
+          }),
+          estadisticas: Type.Object({
+            total_habilitados: Type.Number(),
+            total_votaron: Type.Number(),
+            total_observados: Type.Number()
+          })
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      
+      // Verificar que sea funcionario
+      if (usuario.rol !== 'FUNCIONARIO') {
+        return reply.forbidden('Solo los funcionarios pueden acceder a esta información');
+      }
+
+      try {
+        // Obtener el circuito del funcionario
+        const [circuitoRows]: any[] = await db.query(
+          `SELECT c.id, c.numero
+           FROM CIUDADANO ci
+           JOIN PADRON p ON ci.credencial = p.credencial
+           JOIN CIRCUITO c ON p.id_circuito = c.id
+           WHERE ci.credencial = ?`,
+          [usuario.credencial]
+        );
+
+        if (circuitoRows.length === 0) {
+          return reply.notFound('Funcionario no encontrado en el padrón');
+        }
+
+        const circuito = circuitoRows[0];
+
+        // Obtener estadísticas del circuito
+        const [statsRows]: any[] = await db.query(
+          `SELECT 
+            COUNT(*) as total_habilitados,
+            SUM(CASE WHEN voto = 1 THEN 1 ELSE 0 END) as total_votaron,
+            SUM(CASE WHEN circuito_final IS NOT NULL AND voto = 1 THEN 1 ELSE 0 END) as total_observados
+           FROM PADRON 
+           WHERE id_circuito = ?`,
+          [circuito.id]
+        );
+
+        const estadisticas = statsRows[0];
+
+        return {
+          circuito: {
+            id: circuito.id,
+            numero: circuito.numero
+          },
+          estadisticas: {
+            total_habilitados: estadisticas.total_habilitados,
+            total_votaron: estadisticas.total_votaron,
+            total_observados: estadisticas.total_observados
+          }
+        };
+
+      } catch (error) {
+        console.error('Error al obtener información del circuito:', error);
+        return reply.internalServerError('Error interno al obtener información del circuito');
+      }
+    }
+  });
+
+  // Obtener resultados por lista (para funcionarios - su circuito)
+  fastify.get("/resultados/circuito/listas", {
+    schema: {
+      tags: ["resultados"],
+      summary: "Obtener resultados por lista del circuito del funcionario",
+      response: {
+        200: Type.Array(Type.Object({
+          id_lista: Type.Number(),
+          numero_lista: Type.Number(),
+          nombre_partido: Type.String(),
+          nombre_departamento: Type.String(),
+          votos: Type.Number(),
+          porcentaje: Type.Number()
+        }))
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      
+      // Verificar que sea funcionario
+      if (usuario.rol !== 'FUNCIONARIO') {
+        return reply.forbidden('Solo los funcionarios pueden acceder a esta información');
+      }
+
+      try {
+        // Obtener el circuito del funcionario y su departamento
+        const [circuitoRows]: any[] = await db.query(
+          `SELECT c.id, d.id as id_departamento, d.nombre as nombre_departamento
+           FROM CIUDADANO ci
+           JOIN PADRON p ON ci.credencial = p.credencial
+           JOIN CIRCUITO c ON p.id_circuito = c.id
+           JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+           JOIN LOCALIDAD l ON e.id_localidad = l.id
+           JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+           WHERE ci.credencial = ?`,
+          [usuario.credencial]
+        );
+
+        if (circuitoRows.length === 0) {
+          return reply.notFound('Funcionario no encontrado en el padrón');
+        }
+
+        const idCircuito = circuitoRows[0].id;
+        const idDepartamento = circuitoRows[0].id_departamento;
+
+        // Obtener total de votos en el circuito
+        const [totalRows]: any[] = await db.query(
+          `SELECT COUNT(*) as total
+           FROM VOTO 
+           WHERE id_circuito = ?`,
+          [idCircuito]
+        );
+
+        const totalVotos = totalRows[0].total;
+
+        // Obtener solo las listas habilitadas para ese circuito (mismo departamento)
+        const [resultadosRows]: any[] = await db.query(
+          `SELECT 
+            l.id as id_lista,
+            l.numero as numero_lista,
+            p.nombre as nombre_partido,
+            d.nombre as nombre_departamento,
+            COUNT(v.id) as votos,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(v.id) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje
+           FROM LISTA l
+           JOIN PARTIDO p ON l.id_partido = p.id
+           JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+           LEFT JOIN VOTO v ON l.id = v.id_lista AND v.id_circuito = ?
+           WHERE l.id_departamento = ?
+           GROUP BY l.id, l.numero, p.nombre, d.nombre
+           ORDER BY votos DESC, l.numero ASC`,
+          [totalVotos, totalVotos, idCircuito, idDepartamento]
+        );
+
+        return resultadosRows;
+
+      } catch (error) {
+        console.error('Error al obtener resultados por lista:', error);
+        return reply.internalServerError('Error interno al obtener resultados por lista');
+      }
+    }
+  });
+
+  // Obtener resultados por partido (para funcionarios - su circuito)
+  fastify.get("/resultados/circuito/partidos", {
+    schema: {
+      tags: ["resultados"],
+      summary: "Obtener resultados por partido del circuito del funcionario",
+      response: {
+        200: Type.Array(Type.Object({
+          id_partido: Type.Number(),
+          nombre_partido: Type.String(),
+          presidente: Type.String(),
+          votos: Type.Number(),
+          porcentaje: Type.Number()
+        }))
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      
+      // Verificar que sea funcionario
+      if (usuario.rol !== 'FUNCIONARIO') {
+        return reply.forbidden('Solo los funcionarios pueden acceder a esta información');
+      }
+
+      try {
+        // Obtener el circuito del funcionario
+        const [circuitoRows]: any[] = await db.query(
+          `SELECT c.id
+           FROM CIUDADANO ci
+           JOIN PADRON p ON ci.credencial = p.credencial
+           JOIN CIRCUITO c ON p.id_circuito = c.id
+           WHERE ci.credencial = ?`,
+          [usuario.credencial]
+        );
+
+        if (circuitoRows.length === 0) {
+          return reply.notFound('Funcionario no encontrado en el padrón');
+        }
+
+        const idCircuito = circuitoRows[0].id;
+
+        // Obtener total de votos en el circuito
+        const [totalRows]: any[] = await db.query(
+          `SELECT COUNT(*) as total
+           FROM VOTO 
+           WHERE id_circuito = ?`,
+          [idCircuito]
+        );
+
+        const totalVotos = totalRows[0].total;
+
+        // Obtener resultados por partido
+        const [resultadosRows]: any[] = await db.query(
+          `SELECT 
+            p.id as id_partido,
+            p.nombre as nombre_partido,
+            CONCAT(ci.nombres, ' ', ci.apellido1, ' ', COALESCE(ci.apellido2, '')) as presidente,
+            COUNT(v.id) as votos,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(v.id) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje
+           FROM PARTIDO p
+           LEFT JOIN INTEGRANTES i ON p.id = i.id_partido AND i.rol = 'PRESIDENTE'
+           LEFT JOIN CIUDADANO ci ON i.credencial = ci.credencial
+           LEFT JOIN LISTA l ON p.id = l.id_partido
+           LEFT JOIN VOTO v ON l.id = v.id_lista AND v.id_circuito = ?
+           GROUP BY p.id, p.nombre, presidente
+           ORDER BY votos DESC, p.nombre ASC`,
+          [totalVotos, totalVotos, idCircuito]
+        );
+
+        return resultadosRows;
+
+      } catch (error) {
+        console.error('Error al obtener resultados por partido:', error);
+        return reply.internalServerError('Error interno al obtener resultados por partido');
+      }
+    }
+  });
+
+  // Obtener resultados de papeletas (para funcionarios - su circuito)
+  fastify.get("/resultados/circuito/papeletas", {
+    schema: {
+      tags: ["resultados"],
+      summary: "Obtener resultados de papeletas del circuito del funcionario",
+      response: {
+        200: Type.Array(Type.Object({
+          id_papeleta: Type.Number(),
+          nombre_papeleta: Type.String(),
+          votos_favor: Type.Number(),
+          votos_contra: Type.Number(),
+          porcentaje_favor: Type.Number(),
+          porcentaje_contra: Type.Number()
+        }))
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      
+      // Verificar que sea funcionario
+      if (usuario.rol !== 'FUNCIONARIO') {
+        return reply.forbidden('Solo los funcionarios pueden acceder a esta información');
+      }
+
+      try {
+        // Obtener el circuito del funcionario
+        const [circuitoRows]: any[] = await db.query(
+          `SELECT c.id
+           FROM CIUDADANO ci
+           JOIN PADRON p ON ci.credencial = p.credencial
+           JOIN CIRCUITO c ON p.id_circuito = c.id
+           WHERE ci.credencial = ?`,
+          [usuario.credencial]
+        );
+
+        if (circuitoRows.length === 0) {
+          return reply.notFound('Funcionario no encontrado en el padrón');
+        }
+
+        const idCircuito = circuitoRows[0].id;
+
+        // Obtener total de votos en el circuito
+        const [totalRows]: any[] = await db.query(
+          `SELECT COUNT(*) as total
+           FROM VOTO 
+           WHERE id_circuito = ?`,
+          [idCircuito]
+        );
+
+        const totalVotos = totalRows[0].total;
+
+        // Obtener resultados de papeletas SOLO para ese circuito
+        const [resultadosRows]: any[] = await db.query(
+          `SELECT 
+            pa.id as id_papeleta,
+            pa.nombre as nombre_papeleta,
+            COUNT(pv.id_papeleta) as votos_favor,
+            (? - COUNT(pv.id_papeleta)) as votos_contra,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(pv.id_papeleta) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje_favor,
+            CASE 
+              WHEN ? > 0 THEN ((? - COUNT(pv.id_papeleta)) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje_contra
+           FROM PAPELETA pa
+           LEFT JOIN PAPELETASVOTO pv ON pa.id = pv.id_papeleta
+           LEFT JOIN VOTO v ON pv.id_voto = v.id AND v.id_circuito = ?
+           GROUP BY pa.id, pa.nombre
+           ORDER BY pa.nombre ASC`,
+          [totalVotos, totalVotos, totalVotos, totalVotos, totalVotos, totalVotos, idCircuito]
+        );
+
+        return resultadosRows;
+
+      } catch (error) {
+        console.error('Error al obtener resultados de papeletas:', error);
+        return reply.internalServerError('Error interno al obtener resultados de papeletas');
+      }
+    }
+  });
+
+  // ==================== ENDPOINTS PARA ADMIN ====================
+
+  // Obtener lista de circuitos (para admin)
+  fastify.get("/resultados/admin/circuitos", {
+    schema: {
+      tags: ["resultados"],
+      summary: "Obtener lista de circuitos para admin",
+      response: {
+        200: Type.Array(Type.Object({
+          id: Type.Number(),
+          numero: Type.String(),
+          departamento: Type.String()
+        }))
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      
+      // Verificar que sea admin
+      if (usuario.rol !== 'ADMIN') {
+        return reply.forbidden('Solo los administradores pueden acceder a esta información');
+      }
+
+      try {
+        const [rows]: any[] = await db.query(
+          `SELECT 
+            c.id,
+            c.numero,
+            d.nombre as departamento
+           FROM CIRCUITO c
+           JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+           JOIN LOCALIDAD l ON e.id_localidad = l.id
+           JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+           ORDER BY d.nombre, c.numero`
+        );
+
+        return rows;
+
+      } catch (error) {
+        console.error('Error al obtener circuitos:', error);
+        return reply.internalServerError('Error interno al obtener circuitos');
+      }
+    }
+  });
+
+  // Obtener lista de departamentos (para admin)
+  fastify.get("/resultados/admin/departamentos", {
+    schema: {
+      tags: ["resultados"],
+      summary: "Obtener lista de departamentos para admin",
+      response: {
+        200: Type.Array(Type.Object({
+          id: Type.Number(),
+          nombre: Type.String()
+        }))
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      
+      // Verificar que sea admin
+      if (usuario.rol !== 'ADMIN') {
+        return reply.forbidden('Solo los administradores pueden acceder a esta información');
+      }
+
+      try {
+        const [rows]: any[] = await db.query(
+          `SELECT id, nombre FROM DEPARTAMENTO ORDER BY nombre`
+        );
+
+        return rows;
+
+      } catch (error) {
+        console.error('Error al obtener departamentos:', error);
+        return reply.internalServerError('Error interno al obtener departamentos');
+      }
+    }
+  });
+
+  // Obtener resultados por circuito específico (para admin)
+  fastify.get("/resultados/admin/circuito/:idCircuito", {
+    schema: {
+      tags: ["resultados"],
+      summary: "Obtener resultados de un circuito específico para admin",
+      params: Type.Object({
+        idCircuito: Type.Number()
+      }),
+      response: {
+        200: Type.Object({
+          circuito: Type.Object({
+            id: Type.Number(),
+            numero: Type.String(),
+            departamento: Type.String()
+          }),
+          estadisticas: Type.Object({
+            total_habilitados: Type.Number(),
+            total_votaron: Type.Number(),
+            total_observados: Type.Number()
+          }),
+          resultados_listas: Type.Array(Type.Any()),
+          resultados_partidos: Type.Array(Type.Any()),
+          resultados_papeletas: Type.Array(Type.Any())
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      const { idCircuito } = request.params as { idCircuito: number };
+      
+      // Verificar que sea admin
+      if (usuario.rol !== 'ADMIN') {
+        return reply.forbidden('Solo los administradores pueden acceder a esta información');
+      }
+
+      try {
+        // Obtener información del circuito y su departamento
+        const [circuitoRows]: any[] = await db.query(
+          `SELECT 
+            c.id,
+            c.numero,
+            d.id as id_departamento,
+            d.nombre as departamento
+           FROM CIRCUITO c
+           JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+           JOIN LOCALIDAD l ON e.id_localidad = l.id
+           JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+           WHERE c.id = ?`,
+          [idCircuito]
+        );
+
+        if (circuitoRows.length === 0) {
+          return reply.notFound('Circuito no encontrado');
+        }
+
+        const circuito = circuitoRows[0];
+        const idDepartamento = circuito.id_departamento;
+
+        // Obtener estadísticas del circuito
+        const [statsRows]: any[] = await db.query(
+          `SELECT 
+            COUNT(*) as total_habilitados,
+            SUM(CASE WHEN voto = 1 THEN 1 ELSE 0 END) as total_votaron,
+            SUM(CASE WHEN circuito_final IS NOT NULL AND voto = 1 THEN 1 ELSE 0 END) as total_observados
+           FROM PADRON 
+           WHERE id_circuito = ?`,
+          [idCircuito]
+        );
+
+        const estadisticas = statsRows[0];
+
+        // Obtener total de votos en el circuito
+        const [totalRows]: any[] = await db.query(
+          `SELECT COUNT(*) as total FROM VOTO WHERE id_circuito = ?`,
+          [idCircuito]
+        );
+
+        const totalVotos = totalRows[0].total;
+
+        // Obtener resultados por lista SOLO del departamento del circuito
+        const [listasRows]: any[] = await db.query(
+          `SELECT 
+            l.id as id_lista,
+            l.numero as numero_lista,
+            p.nombre as nombre_partido,
+            d.nombre as nombre_departamento,
+            COUNT(v.id) as votos,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(v.id) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje
+           FROM LISTA l
+           JOIN PARTIDO p ON l.id_partido = p.id
+           JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+           LEFT JOIN VOTO v ON l.id = v.id_lista AND v.id_circuito = ?
+           WHERE l.id_departamento = ?
+           GROUP BY l.id, l.numero, p.nombre, d.nombre
+           ORDER BY votos DESC, l.numero ASC`,
+          [totalVotos, totalVotos, idCircuito, idDepartamento]
+        );
+
+        // Obtener resultados por partido SOLO de partidos con listas en ese departamento
+        const [partidosRows]: any[] = await db.query(
+          `SELECT 
+            p.id as id_partido,
+            p.nombre as nombre_partido,
+            CONCAT(ci.nombres, ' ', ci.apellido1, ' ', COALESCE(ci.apellido2, '')) as presidente,
+            COUNT(v.id) as votos,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(v.id) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje
+           FROM PARTIDO p
+           LEFT JOIN INTEGRANTES i ON p.id = i.id_partido AND i.rol = 'PRESIDENTE'
+           LEFT JOIN CIUDADANO ci ON i.credencial = ci.credencial
+           LEFT JOIN LISTA l ON p.id = l.id_partido AND l.id_departamento = ?
+           LEFT JOIN VOTO v ON l.id = v.id_lista AND v.id_circuito = ?
+           WHERE l.id IS NOT NULL
+           GROUP BY p.id, p.nombre, presidente
+           ORDER BY votos DESC, p.nombre ASC`,
+          [totalVotos, totalVotos, idDepartamento, idCircuito]
+        );
+
+        // Obtener resultados de papeletas SOLO para ese circuito
+        const [papeletasRows]: any[] = await db.query(
+          `SELECT 
+            pa.id as id_papeleta,
+            pa.nombre as nombre_papeleta,
+            COUNT(pv.id_papeleta) as votos_favor,
+            (? - COUNT(pv.id_papeleta)) as votos_contra,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(pv.id_papeleta) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje_favor,
+            CASE 
+              WHEN ? > 0 THEN ((? - COUNT(pv.id_papeleta)) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje_contra
+           FROM PAPELETA pa
+           LEFT JOIN PAPELETASVOTO pv ON pa.id = pv.id_papeleta
+           LEFT JOIN VOTO v ON pv.id_voto = v.id AND v.id_circuito = ?
+           GROUP BY pa.id, pa.nombre
+           ORDER BY pa.nombre ASC`,
+          [totalVotos, totalVotos, totalVotos, totalVotos, totalVotos, totalVotos, idCircuito]
+        );
+
+        return {
+          circuito: {
+            id: circuito.id,
+            numero: circuito.numero,
+            departamento: circuito.departamento
+          },
+          estadisticas: {
+            total_habilitados: estadisticas.total_habilitados,
+            total_votaron: estadisticas.total_votaron,
+            total_observados: estadisticas.total_observados
+          },
+          resultados_listas: listasRows,
+          resultados_partidos: partidosRows,
+          resultados_papeletas: papeletasRows
+        };
+
+      } catch (error) {
+        console.error('Error al obtener resultados del circuito:', error);
+        return reply.internalServerError('Error interno al obtener resultados del circuito');
+      }
+    }
+  });
+
+  // Obtener resultados por departamento (para admin)
+  fastify.get("/resultados/admin/departamento/:idDepartamento", {
+    schema: {
+      tags: ["resultados"],
+      summary: "Obtener resultados de un departamento específico para admin",
+      params: Type.Object({
+        idDepartamento: Type.Number()
+      }),
+      response: {
+        200: Type.Object({
+          departamento: Type.Object({
+            id: Type.Number(),
+            nombre: Type.String()
+          }),
+          estadisticas: Type.Object({
+            total_habilitados: Type.Number(),
+            total_votaron: Type.Number(),
+            total_observados: Type.Number()
+          }),
+          resultados_listas: Type.Array(Type.Any()),
+          resultados_partidos: Type.Array(Type.Any()),
+          resultados_papeletas: Type.Array(Type.Any())
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      const { idDepartamento } = request.params as { idDepartamento: number };
+      
+      // Verificar que sea admin
+      if (usuario.rol !== 'ADMIN') {
+        return reply.forbidden('Solo los administradores pueden acceder a esta información');
+      }
+
+      try {
+        // Obtener información del departamento
+        const [departamentoRows]: any[] = await db.query(
+          `SELECT id, nombre FROM DEPARTAMENTO WHERE id = ?`,
+          [idDepartamento]
+        );
+
+        if (departamentoRows.length === 0) {
+          return reply.notFound('Departamento no encontrado');
+        }
+
+        const departamento = departamentoRows[0];
+
+        // Obtener estadísticas del departamento
+        const [statsRows]: any[] = await db.query(
+          `SELECT 
+            COUNT(*) as total_habilitados,
+            SUM(CASE WHEN p.voto = 1 THEN 1 ELSE 0 END) as total_votaron,
+            SUM(CASE WHEN p.circuito_final IS NOT NULL AND p.voto = 1 THEN 1 ELSE 0 END) as total_observados
+           FROM PADRON p
+           JOIN CIRCUITO c ON p.id_circuito = c.id
+           JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+           JOIN LOCALIDAD l ON e.id_localidad = l.id
+           WHERE l.id_departamento = ?`,
+          [idDepartamento]
+        );
+
+        const estadisticas = statsRows[0];
+
+        // Obtener total de votos en el departamento
+        const [totalRows]: any[] = await db.query(
+          `SELECT COUNT(*) as total
+           FROM VOTO v
+           JOIN CIRCUITO c ON v.id_circuito = c.id
+           JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+           JOIN LOCALIDAD l ON e.id_localidad = l.id
+           WHERE l.id_departamento = ?`,
+          [idDepartamento]
+        );
+
+        const totalVotos = totalRows[0].total;
+
+        // Obtener resultados por lista SOLO del departamento
+        const [listasRows]: any[] = await db.query(
+          `SELECT 
+            l.id as id_lista,
+            l.numero as numero_lista,
+            p.nombre as nombre_partido,
+            d.nombre as nombre_departamento,
+            COUNT(v.id) as votos,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(v.id) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje
+           FROM LISTA l
+           JOIN PARTIDO p ON l.id_partido = p.id
+           JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+           LEFT JOIN VOTO v ON l.id = v.id_lista
+           WHERE l.id_departamento = ?
+           GROUP BY l.id, l.numero, p.nombre, d.nombre
+           ORDER BY votos DESC, l.numero ASC`,
+          [totalVotos, totalVotos, idDepartamento]
+        );
+
+        // Obtener resultados por partido SOLO de partidos con listas en ese departamento
+        const [partidosRows]: any[] = await db.query(
+          `SELECT 
+            p.id as id_partido,
+            p.nombre as nombre_partido,
+            CONCAT(ci.nombres, ' ', ci.apellido1, ' ', COALESCE(ci.apellido2, '')) as presidente,
+            COUNT(v.id) as votos,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(v.id) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje
+           FROM PARTIDO p
+           LEFT JOIN INTEGRANTES i ON p.id = i.id_partido AND i.rol = 'PRESIDENTE'
+           LEFT JOIN CIUDADANO ci ON i.credencial = ci.credencial
+           LEFT JOIN LISTA l ON p.id = l.id_partido AND l.id_departamento = ?
+           LEFT JOIN VOTO v ON l.id = v.id_lista
+           WHERE l.id IS NOT NULL
+           GROUP BY p.id, p.nombre, presidente
+           ORDER BY votos DESC, p.nombre ASC`,
+          [totalVotos, totalVotos, idDepartamento]
+        );
+
+        // Obtener resultados de papeletas SOLO para ese departamento
+        const [papeletasRows]: any[] = await db.query(
+          `SELECT 
+            pa.id as id_papeleta,
+            pa.nombre as nombre_papeleta,
+            COUNT(pv.id_papeleta) as votos_favor,
+            (? - COUNT(pv.id_papeleta)) as votos_contra,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(pv.id_papeleta) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje_favor,
+            CASE 
+              WHEN ? > 0 THEN ((? - COUNT(pv.id_papeleta)) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje_contra
+           FROM PAPELETA pa
+           LEFT JOIN PAPELETASVOTO pv ON pa.id = pv.id_papeleta
+           LEFT JOIN VOTO v ON pv.id_voto = v.id
+           LEFT JOIN CIRCUITO c ON v.id_circuito = c.id
+           LEFT JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+           LEFT JOIN LOCALIDAD l ON e.id_localidad = l.id
+           WHERE l.id_departamento = ?
+           GROUP BY pa.id, pa.nombre
+           ORDER BY pa.nombre ASC`,
+          [totalVotos, totalVotos, totalVotos, totalVotos, totalVotos, totalVotos, idDepartamento]
+        );
+
+        return {
+          departamento: {
+            id: departamento.id,
+            nombre: departamento.nombre
+          },
+          estadisticas: {
+            total_habilitados: estadisticas.total_habilitados,
+            total_votaron: estadisticas.total_votaron,
+            total_observados: estadisticas.total_observados
+          },
+          resultados_listas: listasRows,
+          resultados_partidos: partidosRows,
+          resultados_papeletas: papeletasRows
+        };
+
+      } catch (error) {
+        console.error('Error al obtener resultados del departamento:', error);
+        return reply.internalServerError('Error interno al obtener resultados del departamento');
+      }
+    }
+  });
+
+  // Obtener resultados generales del país (para admin)
+  fastify.get("/resultados/admin/generales", {
+    schema: {
+      tags: ["resultados"],
+      summary: "Obtener resultados generales del país para admin",
+      response: {
+        200: Type.Object({
+          estadisticas: Type.Object({
+            total_habilitados: Type.Number(),
+            total_votaron: Type.Number(),
+            total_observados: Type.Number()
+          }),
+          resultados_listas: Type.Array(Type.Any()),
+          resultados_partidos: Type.Array(Type.Any()),
+          resultados_papeletas: Type.Array(Type.Any())
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      
+      // Verificar que sea admin
+      if (usuario.rol !== 'ADMIN') {
+        return reply.forbidden('Solo los administradores pueden acceder a esta información');
+      }
+
+      try {
+        // Obtener estadísticas generales
+        const [statsRows]: any[] = await db.query(
+          `SELECT 
+            COUNT(*) as total_habilitados,
+            SUM(CASE WHEN voto = 1 THEN 1 ELSE 0 END) as total_votaron,
+            SUM(CASE WHEN circuito_final IS NOT NULL AND voto = 1 THEN 1 ELSE 0 END) as total_observados
+           FROM PADRON`
+        );
+
+        const estadisticas = statsRows[0];
+
+        // Obtener total de votos generales
+        const [totalRows]: any[] = await db.query(
+          `SELECT COUNT(*) as total FROM VOTO`
+        );
+
+        const totalVotos = totalRows[0].total;
+
+        // Obtener resultados por lista
+        const [listasRows]: any[] = await db.query(
+          `SELECT 
+            l.id as id_lista,
+            l.numero as numero_lista,
+            p.nombre as nombre_partido,
+            d.nombre as nombre_departamento,
+            COUNT(v.id) as votos,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(v.id) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje
+           FROM LISTA l
+           JOIN PARTIDO p ON l.id_partido = p.id
+           JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+           LEFT JOIN VOTO v ON l.id = v.id_lista
+           GROUP BY l.id, l.numero, p.nombre, d.nombre
+           ORDER BY votos DESC, l.numero ASC`,
+          [totalVotos, totalVotos]
+        );
+
+        // Obtener resultados por partido
+        const [partidosRows]: any[] = await db.query(
+          `SELECT 
+            p.id as id_partido,
+            p.nombre as nombre_partido,
+            CONCAT(ci.nombres, ' ', ci.apellido1, ' ', COALESCE(ci.apellido2, '')) as presidente,
+            COUNT(v.id) as votos,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(v.id) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje
+           FROM PARTIDO p
+           LEFT JOIN INTEGRANTES i ON p.id = i.id_partido AND i.rol = 'PRESIDENTE'
+           LEFT JOIN CIUDADANO ci ON i.credencial = ci.credencial
+           LEFT JOIN LISTA l ON p.id = l.id_partido
+           LEFT JOIN VOTO v ON l.id = v.id_lista
+           GROUP BY p.id, p.nombre, presidente
+           ORDER BY votos DESC, p.nombre ASC`,
+          [totalVotos, totalVotos]
+        );
+
+        // Obtener resultados de papeletas generales
+        const [papeletasRows]: any[] = await db.query(
+          `SELECT 
+            pa.id as id_papeleta,
+            pa.nombre as nombre_papeleta,
+            COUNT(pv.id_papeleta) as votos_favor,
+            (? - COUNT(pv.id_papeleta)) as votos_contra,
+            CASE 
+              WHEN ? > 0 THEN (COUNT(pv.id_papeleta) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje_favor,
+            CASE 
+              WHEN ? > 0 THEN ((? - COUNT(pv.id_papeleta)) * 100.0 / ?)
+              ELSE 0 
+            END as porcentaje_contra
+           FROM PAPELETA pa
+           LEFT JOIN PAPELETASVOTO pv ON pa.id = pv.id_papeleta
+           LEFT JOIN VOTO v ON pv.id_voto = v.id
+           GROUP BY pa.id, pa.nombre
+           ORDER BY pa.nombre ASC`,
+          [totalVotos, totalVotos, totalVotos, totalVotos, totalVotos, totalVotos]
+        );
+
+        return {
+          estadisticas: {
+            total_habilitados: estadisticas.total_habilitados,
+            total_votaron: estadisticas.total_votaron,
+            total_observados: estadisticas.total_observados
+          },
+          resultados_listas: listasRows,
+          resultados_partidos: partidosRows,
+          resultados_papeletas: papeletasRows
+        };
+
+      } catch (error) {
+        console.error('Error al obtener resultados generales:', error);
+        return reply.internalServerError('Error interno al obtener resultados generales');
+      }
+    }
+  });
 };
 
 export default eleccionesRoutes; 

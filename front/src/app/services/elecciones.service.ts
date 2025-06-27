@@ -66,4 +66,51 @@ export class EleccionesService {
     console.log('Llamando a enviarVoto con datos:', voto);
     return this.fetchService.post(`${this.apiUrl}/votos`, JSON.stringify(voto));
   }
+
+  // ==================== MÉTODOS DE RESULTADOS ====================
+
+  // Para funcionarios - obtener información de su circuito
+  async getInfoCircuito(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/resultados/circuito/info`);
+  }
+
+  // Para funcionarios - resultados por lista de su circuito
+  async getResultadosListasCircuito(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/resultados/circuito/listas`);
+  }
+
+  // Para funcionarios - resultados por partido de su circuito
+  async getResultadosPartidosCircuito(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/resultados/circuito/partidos`);
+  }
+
+  // Para funcionarios - resultados de papeletas de su circuito
+  async getResultadosPapeletasCircuito(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/resultados/circuito/papeletas`);
+  }
+
+  // Para admin - obtener lista de circuitos
+  async getCircuitosAdmin(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/resultados/admin/circuitos`);
+  }
+
+  // Para admin - obtener lista de departamentos
+  async getDepartamentosAdmin(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/resultados/admin/departamentos`);
+  }
+
+  // Para admin - resultados de un circuito específico
+  async getResultadosCircuitoAdmin(idCircuito: number): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/resultados/admin/circuito/${idCircuito}`);
+  }
+
+  // Para admin - resultados de un departamento específico
+  async getResultadosDepartamentoAdmin(idDepartamento: number): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/resultados/admin/departamento/${idDepartamento}`);
+  }
+
+  // Para admin - resultados generales del país
+  async getResultadosGeneralesAdmin(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/resultados/admin/generales`);
+  }
 } 

@@ -1,21 +1,296 @@
-<div class="confirmar-container">
-  <h2>Resultados de la Votación</h2>
-
-  <div class="resultados-candidatos">
-    <h3>Candidatos</h3>
-    <div *ngFor="let candidato of resultadosCandidatos" class="resultado-item">
-      <p><strong>{{ candidato.nombre }}:</strong> {{ candidato.votos }} votos</p>
-    </div>
+<div class="resultados-container">
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    <p>Cargando resultados...</p>
   </div>
 
-  <div class="resultados-plebiscitos">
-    <h3>Plebiscitos</h3>
-    <div *ngFor="let plebiscito of resultadosPlebiscitos" class="resultado-item">
-      <p><strong>{{ plebiscito.pregunta }}</strong></p>
-      <p>Sí: {{ plebiscito.votosSi }} votos</p>
-      <p>No: {{ plebiscito.votosNo }} votos</p>
-    </div>
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="error-container">
+    <mat-card>
+      <mat-card-content>
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ error }}</p>
+      </mat-card-content>
+    </mat-card>
   </div>
 
-  <button mat-raised-button color="primary" (click)="volver()">Volver</button>
+  <!-- Contenido principal -->
+  <div *ngIf="!loading && !error">
+    <!-- Título -->
+    <div class="header">
+      <h1>{{ getTituloVista() }}</h1>
+      <p *ngIf="usuario">Usuario: {{ usuario.nombre }} {{ usuario.apellido }} ({{ usuario.rol }})</p>
+    </div>
+
+    <!-- Panel de selección para ADMIN -->
+    <div *ngIf="usuario?.rol === 'ADMIN'" class="admin-panel">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Seleccionar Vista</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="selection-controls">
+            <!-- Resultados Generales -->
+            <button mat-raised-button 
+                    [color]="vistaSeleccionada === 'generales' ? 'primary' : 'basic'"
+                    (click)="cargarResultadosGenerales()">
+              <mat-icon>public</mat-icon>
+              Generales del País
+            </button>
+
+            <!-- Selección de Circuito -->
+            <div class="select-group">
+              <mat-form-field appearance="fill">
+                <mat-label>Seleccionar Circuito</mat-label>
+                <mat-select [(ngModel)]="circuitoSeleccionado" (selectionChange)="cargarResultadosCircuito()">
+                  <mat-option>
+                    <input matInput placeholder="Buscar circuito..." [(ngModel)]="circuitoFiltro" (click)="$event.stopPropagation()" style="width: 100%; padding: 4px 8px;" />
+                  </mat-option>
+                  <mat-option *ngFor="let circuito of circuitosFiltrados" [value]="circuito.id">
+                    {{ circuito.numero }} - {{ circuito.departamento }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Selección de Departamento -->
+            <div class="select-group">
+              <mat-form-field appearance="fill">
+                <mat-label>Seleccionar Departamento</mat-label>
+                <mat-select [(ngModel)]="departamentoSeleccionado" (selectionChange)="cargarResultadosDepartamento()">
+                  <mat-option *ngFor="let depto of departamentos" [value]="depto.id">
+                    {{ depto.nombre }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Estadísticas -->
+    <div *ngIf="getEstadisticas()" class="estadisticas-container">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Estadísticas</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-number">{{ getEstadisticas()?.total_habilitados }}</div>
+              <div class="stat-label">Habilitados</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{ getEstadisticas()?.total_votaron }}</div>
+              <div class="stat-label">Votaron</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{ getEstadisticas()?.total_observados }}</div>
+              <div class="stat-label">Observados</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">
+                {{ getPorcentajeParticipacion() }}
+              </div>
+              <div class="stat-label">Participación</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Tabs de Resultados -->
+    <mat-tab-group class="resultados-tabs">
+      <!-- Tab: Resultados por Lista -->
+      <mat-tab label="Por Lista">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Resultados por Lista</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="usuario?.rol === 'FUNCIONARIO' ? resultadosListas : (resultadosAdmin?.resultados_listas || [])" 
+                     class="results-table">
+                
+                <!-- Número de Lista -->
+                <ng-container matColumnDef="numero">
+                  <th mat-header-cell *matHeaderCellDef>Lista</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.numero_lista }}</td>
+                </ng-container>
+
+                <!-- Partido -->
+                <ng-container matColumnDef="partido">
+                  <th mat-header-cell *matHeaderCellDef>Partido</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.nombre_partido }}</td>
+                </ng-container>
+
+                <!-- Departamento -->
+                <ng-container matColumnDef="departamento">
+                  <th mat-header-cell *matHeaderCellDef>Departamento</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.nombre_departamento }}</td>
+                </ng-container>
+
+                <!-- Votos -->
+                <ng-container matColumnDef="votos">
+                  <th mat-header-cell *matHeaderCellDef>Votos</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.votos }}</td>
+                </ng-container>
+
+                <!-- Porcentaje -->
+                <ng-container matColumnDef="porcentaje">
+                  <th mat-header-cell *matHeaderCellDef>Porcentaje</th>
+                  <td mat-cell *matCellDef="let elemento">
+                    <div class="percentage-container">
+                      <span>{{ formatearPorcentaje(elemento.porcentaje) }}</span>
+                      <mat-progress-bar 
+                        [value]="elemento.porcentaje" 
+                        [color]="getColorPorcentaje(elemento.porcentaje)"
+                        class="percentage-bar">
+                      </mat-progress-bar>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumnsListas"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumnsListas;"></tr>
+              </table>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Tab: Resultados por Partido -->
+      <mat-tab label="Por Partido">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Resultados por Partido</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="usuario?.rol === 'FUNCIONARIO' ? resultadosPartidos : (resultadosAdmin?.resultados_partidos || [])" 
+                     class="results-table">
+                
+                <!-- Partido -->
+                <ng-container matColumnDef="partido">
+                  <th mat-header-cell *matHeaderCellDef>Partido</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.nombre_partido }}</td>
+                </ng-container>
+
+                <!-- Presidente -->
+                <ng-container matColumnDef="presidente">
+                  <th mat-header-cell *matHeaderCellDef>Presidente</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.presidente || 'N/A' }}</td>
+                </ng-container>
+
+                <!-- Votos -->
+                <ng-container matColumnDef="votos">
+                  <th mat-header-cell *matHeaderCellDef>Votos</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.votos }}</td>
+                </ng-container>
+
+                <!-- Porcentaje -->
+                <ng-container matColumnDef="porcentaje">
+                  <th mat-header-cell *matHeaderCellDef>Porcentaje</th>
+                  <td mat-cell *matCellDef="let elemento">
+                    <div class="percentage-container">
+                      <span>{{ formatearPorcentaje(elemento.porcentaje) }}</span>
+                      <mat-progress-bar 
+                        [value]="elemento.porcentaje" 
+                        [color]="getColorPorcentaje(elemento.porcentaje)"
+                        class="percentage-bar">
+                      </mat-progress-bar>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumnsPartidos"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumnsPartidos;"></tr>
+              </table>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Tab: Resultados de Papeletas -->
+      <mat-tab label="Papeletas">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Resultados de Papeletas</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="usuario?.rol === 'FUNCIONARIO' ? resultadosPapeletas : (resultadosAdmin?.resultados_papeletas || [])" 
+                     class="results-table">
+                
+                <!-- Papeleta -->
+                <ng-container matColumnDef="papeleta">
+                  <th mat-header-cell *matHeaderCellDef>Papeleta</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.nombre_papeleta }}</td>
+                </ng-container>
+
+                <!-- Votos Favor -->
+                <ng-container matColumnDef="favor">
+                  <th mat-header-cell *matHeaderCellDef>Votos Favor</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.votos_favor }}</td>
+                </ng-container>
+
+                <!-- Votos Contra -->
+                <ng-container matColumnDef="contra">
+                  <th mat-header-cell *matHeaderCellDef>Votos Contra</th>
+                  <td mat-cell *matCellDef="let elemento">{{ elemento.votos_contra }}</td>
+                </ng-container>
+
+                <!-- Porcentaje Favor -->
+                <ng-container matColumnDef="porcentaje_favor">
+                  <th mat-header-cell *matHeaderCellDef>% Favor</th>
+                  <td mat-cell *matCellDef="let elemento">
+                    <div class="percentage-container">
+                      <span>{{ formatearPorcentaje(elemento.porcentaje_favor) }}</span>
+                      <mat-progress-bar 
+                        [value]="elemento.porcentaje_favor" 
+                        [color]="getColorPorcentaje(elemento.porcentaje_favor)"
+                        class="percentage-bar">
+                      </mat-progress-bar>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <!-- Porcentaje Contra -->
+                <ng-container matColumnDef="porcentaje_contra">
+                  <th mat-header-cell *matHeaderCellDef>% Contra</th>
+                  <td mat-cell *matCellDef="let elemento">
+                    <div class="percentage-container">
+                      <span>{{ formatearPorcentaje(elemento.porcentaje_contra) }}</span>
+                      <mat-progress-bar 
+                        [value]="elemento.porcentaje_contra" 
+                        [color]="getColorPorcentaje(elemento.porcentaje_contra)"
+                        class="percentage-bar">
+                      </mat-progress-bar>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumnsPapeletas"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumnsPapeletas;"></tr>
+              </table>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
 </div>
+
+<!-- Mejoro el espaciado de los botones -->
+<style>
+  .selection-controls button[mat-raised-button] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+    padding: 8px 16px;
+    font-size: 1rem;
+  }
+</style>
