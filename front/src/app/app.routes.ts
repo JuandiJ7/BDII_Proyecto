@@ -42,5 +42,25 @@ export const routes: Routes = [
         loadComponent: () =>
             import('./pages/resultados/resultados.component').then((m) => m.ResultadosComponent),
         canActivate: [loggedGuard]
+    },
+    {
+        path: 'admin/ciudadanos',
+        loadComponent: () => import('./pages/admin/ciudadanos.component').then(m => m.AdminCiudadanosComponent),
+        canActivate: [loggedGuard]
+    },
+    {
+        path: 'admin/padron',
+        loadComponent: () => import('./pages/admin/padron.component').then(m => m.AdminPadronComponent),
+        canActivate: [loggedGuard]
+    },
+    {
+        path: 'admin/policias',
+        loadComponent: () => import('./pages/admin/policias.component').then(m => m.AdminPoliciasComponent),
+        canActivate: [loggedGuard]
+    },
+    {
+        path: 'admin/empleados',
+        loadComponent: () => import('./pages/admin/empleados.component').then(m => m.AdminEmpleadosComponent),
+        canActivate: [loggedGuard]
     }
 ];

@@ -3,6 +3,10 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { EleccionesService } from '../../services/elecciones.service';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { AutoridadesModalComponent } from '../admin/autoridades-modal.component';
 
 type Usuario = {
   nombre: string;
@@ -18,7 +22,10 @@ type Usuario = {
   selector: 'app-inicio',
   standalone: true,
   imports: [
-    CommonModule
+    CommonModule,
+    MatDialogModule,
+    MatIconModule,
+    MatButtonModule
   ],
   templateUrl: './inicio.component.html',
   styleUrls: ['./inicio.component.css']
@@ -29,7 +36,8 @@ export class InicioComponent implements OnInit {
   constructor(
     private router: Router,
     private authService: AuthService,
-    private eleccionesService: EleccionesService
+    private eleccionesService: EleccionesService,
+    private dialog: MatDialog
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -60,39 +68,81 @@ export class InicioComponent implements OnInit {
 
   // Métodos para el rol ADMIN
   abrirEleccion(): void {
-    console.log('Abrir elección');
-    // Lógica para abrir elección
+    if (confirm('¿Está seguro que desea ABRIR todas las mesas?')) {
+      this.eleccionesService.abrirTodasLasMesas().then(res => {
+        if (res.success) {
+          alert(`✅ ${res.mensaje}\nCircuitos abiertos: ${res.circuitos_abiertos}`);
+        } else {
+          alert('❌ Error al abrir las mesas');
+        }
+      }).catch(error => {
+        console.error('Error al abrir todas las mesas:', error);
+        alert('❌ Error al abrir las mesas. Verifique su conexión.');
+      });
+    }
   }
 
   cerrarEleccion(): void {
-    console.log('Cerrar elección');
-    // Lógica para cerrar elección
+    if (confirm('¿Está seguro que desea CERRAR todas las mesas?')) {
+      this.eleccionesService.cerrarTodasLasMesas().then(res => {
+        if (res.success) {
+          alert(`✅ ${res.mensaje}\nCircuitos cerrados: ${res.circuitos_cerrados}`);
+        } else {
+          alert('❌ Error al cerrar las mesas');
+        }
+      }).catch(error => {
+        console.error('Error al cerrar todas las mesas:', error);
+        alert('❌ Error al cerrar las mesas. Verifique su conexión.');
+      });
+    }
   }
 
   crearEleccion(): void {
-    console.log('Crear elección');
-    // Lógica para crear elección
+    this.router.navigate(['/admin/ciudadanos']);
   }
 
   editarEleccion(): void {
-    console.log('Editar elección');
-    // Lógica para editar elección
+    this.router.navigate(['/admin/padron']);
   }
 
   editarCircuito(): void {
-    console.log('Editar circuito');
-    // Lógica para editar circuito
+    this.dialog.open(AutoridadesModalComponent, {
+      width: '600px',
+      disableClose: false
+    });
   }
 
   editarEstablecimiento(): void {
-    console.log('Editar establecimiento');
-    // Lógica para editar establecimiento
+    this.router.navigate(['/admin/empleados']);
   }
 
   // Métodos para el rol FUNCIONARIO (Integrante de mesa)
-  cerrarMesa(): void {
-    console.log('Cerrar mesa');
-    // Lógica para cerrar mesa
+  async abrirMesa(): Promise<void> {
+    try {
+      const resultado = await this.eleccionesService.abrirCircuito();
+      if (resultado.success) {
+        alert('Mesa abierta correctamente');
+      } else {
+        alert('Error al abrir la mesa: ' + resultado.mensaje);
+      }
+    } catch (error) {
+      console.error('Error al abrir mesa:', error);
+      alert('Error al abrir la mesa. Intente nuevamente.');
+    }
+  }
+
+  async cerrarMesa(): Promise<void> {
+    try {
+      const resultado = await this.eleccionesService.cerrarCircuito();
+      if (resultado.success) {
+        alert('Mesa cerrada correctamente');
+      } else {
+        alert('Error al cerrar la mesa: ' + resultado.mensaje);
+      }
+    } catch (error) {
+      console.error('Error al cerrar mesa:', error);
+      alert('Error al cerrar la mesa. Intente nuevamente.');
+    }
   }
 
   validarVotante(): void {

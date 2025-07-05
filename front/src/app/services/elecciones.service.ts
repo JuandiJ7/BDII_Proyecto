@@ -113,4 +113,50 @@ export class EleccionesService {
   async getResultadosGeneralesAdmin(): Promise<any> {
     return this.fetchService.get(`${this.apiUrl}/resultados/admin/generales`);
   }
+
+  // ==================== MÉTODOS PARA FUNCIONARIO - GESTIÓN DE CIRCUITO ====================
+
+  // Abrir circuito (mesa) - FUNCIONARIO
+  async abrirCircuito(): Promise<any> {
+    return this.fetchService.post(`${this.apiUrl}/circuito/abrir`, '{}');
+  }
+
+  // Cerrar circuito (mesa) - FUNCIONARIO
+  async cerrarCircuito(): Promise<any> {
+    return this.fetchService.post(`${this.apiUrl}/circuito/cerrar`, '{}');
+  }
+
+  // ==================== MÉTODOS PARA ADMIN - GESTIÓN GLOBAL ====================
+
+  // Abrir TODAS las mesas - ADMIN
+  async abrirTodasLasMesas(): Promise<any> {
+    return this.fetchService.post(`${this.apiUrl}/admin/circuitos/abrir-todos`, '{}');
+  }
+
+  // Cerrar TODAS las mesas - ADMIN
+  async cerrarTodasLasMesas(): Promise<any> {
+    return this.fetchService.post(`${this.apiUrl}/admin/circuitos/cerrar-todos`, '{}');
+  }
+
+  // ==================== MÉTODOS PARA ADMIN - GESTIÓN DE AUTORIDADES ====================
+
+  // Obtener lista de circuitos - ADMIN
+  async getCircuitos(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/admin/circuitos`);
+  }
+
+  // Obtener autoridades de un circuito - ADMIN
+  async getAutoridadesCircuito(idCircuito: number): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/admin/circuito/${idCircuito}/autoridades`);
+  }
+
+  // Obtener lista de empleados - ADMIN
+  async getEmpleados(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/admin/empleados`);
+  }
+
+  // Modificar autoridades de un circuito - ADMIN
+  async modificarAutoridadesCircuito(idCircuito: number, autoridades: any): Promise<any> {
+    return this.fetchService.put(`${this.apiUrl}/admin/circuito/${idCircuito}/autoridades`, JSON.stringify(autoridades));
+  }
 } 
