@@ -672,8 +672,6 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
   });
 
-  // Aquí se agregarán los otros endpoints: listas, integrantes, papeletas
-
   // ==================== ENDPOINTS DE RESULTADOS ====================
 
   // Obtener información del circuito (para funcionarios)
@@ -685,13 +683,17 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         200: Type.Object({
           circuito: Type.Object({
             id: Type.Number(),
-            numero: Type.String()
+            numero: Type.String(),
+            cerrado: Type.Boolean()
           }),
           estadisticas: Type.Object({
             total_habilitados: Type.Number(),
             total_votaron: Type.Number(),
             total_observados: Type.Number()
           })
+        }),
+        403: Type.Object({
+          error: Type.String()
         })
       }
     },
@@ -705,9 +707,9 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
 
       try {
-        // Obtener el circuito del funcionario
+        // Obtener el circuito del funcionario y su estado
         const [circuitoRows]: any[] = await db.query(
-          `SELECT c.id, c.numero
+          `SELECT c.id, c.numero, c.circuito_cerrado
            FROM CIUDADANO ci
            JOIN PADRON p ON ci.credencial = p.credencial
            JOIN CIRCUITO c ON p.id_circuito = c.id
@@ -720,6 +722,7 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
 
         const circuito = circuitoRows[0];
+        const circuitoCerrado = circuito.circuito_cerrado === 1;
 
         // Obtener estadísticas del circuito
         const [statsRows]: any[] = await db.query(
@@ -737,7 +740,8 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         return {
           circuito: {
             id: circuito.id,
-            numero: circuito.numero
+            numero: circuito.numero,
+            cerrado: circuitoCerrado
           },
           estadisticas: {
             total_habilitados: estadisticas.total_habilitados,
@@ -766,7 +770,10 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           nombre_departamento: Type.String(),
           votos: Type.Number(),
           porcentaje: Type.Number()
-        }))
+        })),
+        403: Type.Object({
+          error: Type.String()
+        })
       }
     },
     onRequest: [fastify.verifyJWT],
@@ -779,9 +786,9 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
 
       try {
-        // Obtener el circuito del funcionario y su departamento
+        // Obtener el circuito del funcionario, su departamento y estado
         const [circuitoRows]: any[] = await db.query(
-          `SELECT c.id, d.id as id_departamento, d.nombre as nombre_departamento
+          `SELECT c.id, c.circuito_cerrado, d.id as id_departamento, d.nombre as nombre_departamento
            FROM CIUDADANO ci
            JOIN PADRON p ON ci.credencial = p.credencial
            JOIN CIRCUITO c ON p.id_circuito = c.id
@@ -797,7 +804,13 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
 
         const idCircuito = circuitoRows[0].id;
+        const circuitoCerrado = circuitoRows[0].circuito_cerrado === 1;
         const idDepartamento = circuitoRows[0].id_departamento;
+
+        // Verificar que el circuito esté cerrado
+        if (!circuitoCerrado) {
+          return reply.forbidden('Los resultados solo son visibles cuando el circuito esté cerrado');
+        }
 
         // Obtener total de votos en el circuito
         const [totalRows]: any[] = await db.query(
@@ -852,7 +865,10 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           presidente: Type.String(),
           votos: Type.Number(),
           porcentaje: Type.Number()
-        }))
+        })),
+        403: Type.Object({
+          error: Type.String()
+        })
       }
     },
     onRequest: [fastify.verifyJWT],
@@ -865,9 +881,9 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
 
       try {
-        // Obtener el circuito del funcionario
+        // Obtener el circuito del funcionario y su estado
         const [circuitoRows]: any[] = await db.query(
-          `SELECT c.id
+          `SELECT c.id, c.circuito_cerrado
            FROM CIUDADANO ci
            JOIN PADRON p ON ci.credencial = p.credencial
            JOIN CIRCUITO c ON p.id_circuito = c.id
@@ -880,6 +896,12 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
 
         const idCircuito = circuitoRows[0].id;
+        const circuitoCerrado = circuitoRows[0].circuito_cerrado === 1;
+
+        // Verificar que el circuito esté cerrado
+        if (!circuitoCerrado) {
+          return reply.forbidden('Los resultados solo son visibles cuando el circuito esté cerrado');
+        }
 
         // Obtener total de votos en el circuito
         const [totalRows]: any[] = await db.query(
@@ -934,7 +956,10 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           votos_contra: Type.Number(),
           porcentaje_favor: Type.Number(),
           porcentaje_contra: Type.Number()
-        }))
+        })),
+        403: Type.Object({
+          error: Type.String()
+        })
       }
     },
     onRequest: [fastify.verifyJWT],
@@ -947,9 +972,9 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
 
       try {
-        // Obtener el circuito del funcionario
+        // Obtener el circuito del funcionario y su estado
         const [circuitoRows]: any[] = await db.query(
-          `SELECT c.id
+          `SELECT c.id, c.circuito_cerrado
            FROM CIUDADANO ci
            JOIN PADRON p ON ci.credencial = p.credencial
            JOIN CIRCUITO c ON p.id_circuito = c.id
@@ -962,6 +987,12 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
 
         const idCircuito = circuitoRows[0].id;
+        const circuitoCerrado = circuitoRows[0].circuito_cerrado === 1;
+
+        // Verificar que el circuito esté cerrado
+        if (!circuitoCerrado) {
+          return reply.forbidden('Los resultados solo son visibles cuando el circuito esté cerrado');
+        }
 
         // Obtener total de votos en el circuito
         const [totalRows]: any[] = await db.query(
@@ -1026,7 +1057,7 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       
       // Verificar que sea admin
       if (usuario.rol !== 'ADMIN') {
-        return reply.forbidden('Solo los administradores pueden acceder a esta información');
+        return reply.code(403).send({ error: 'Solo los administradores pueden acceder a esta información' });
       }
 
       try {
@@ -1069,7 +1100,7 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       
       // Verificar que sea admin
       if (usuario.rol !== 'ADMIN') {
-        return reply.forbidden('Solo los administradores pueden acceder a esta información');
+        return reply.code(403).send({ error: 'Solo los administradores pueden acceder a esta información' });
       }
 
       try {
@@ -1099,7 +1130,8 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           circuito: Type.Object({
             id: Type.Number(),
             numero: Type.String(),
-            departamento: Type.String()
+            departamento: Type.String(),
+            cerrado: Type.Boolean()
           }),
           estadisticas: Type.Object({
             total_habilitados: Type.Number(),
@@ -1109,6 +1141,9 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           resultados_listas: Type.Array(Type.Any()),
           resultados_partidos: Type.Array(Type.Any()),
           resultados_papeletas: Type.Array(Type.Any())
+        }),
+        403: Type.Object({
+          error: Type.String()
         })
       }
     },
@@ -1119,15 +1154,16 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       
       // Verificar que sea admin
       if (usuario.rol !== 'ADMIN') {
-        return reply.forbidden('Solo los administradores pueden acceder a esta información');
+        return reply.code(403).send({ error: 'Solo los administradores pueden acceder a esta información' });
       }
 
       try {
-        // Obtener información del circuito y su departamento
+        // Obtener información del circuito, su departamento y estado
         const [circuitoRows]: any[] = await db.query(
           `SELECT 
             c.id,
             c.numero,
+            c.circuito_cerrado,
             d.id as id_departamento,
             d.nombre as departamento
            FROM CIRCUITO c
@@ -1143,7 +1179,13 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
 
         const circuito = circuitoRows[0];
+        const circuitoCerrado = circuito.circuito_cerrado === 1;
         const idDepartamento = circuito.id_departamento;
+
+        // Verificar que el circuito esté cerrado
+        if (!circuitoCerrado) {
+          return reply.forbidden('Los resultados solo son visibles cuando el circuito esté cerrado');
+        }
 
         // Obtener estadísticas del circuito
         const [statsRows]: any[] = await db.query(
@@ -1237,7 +1279,8 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           circuito: {
             id: circuito.id,
             numero: circuito.numero,
-            departamento: circuito.departamento
+            departamento: circuito.departamento,
+            cerrado: circuitoCerrado
           },
           estadisticas: {
             total_habilitados: estadisticas.total_habilitados,
@@ -1278,6 +1321,9 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           resultados_listas: Type.Array(Type.Any()),
           resultados_partidos: Type.Array(Type.Any()),
           resultados_papeletas: Type.Array(Type.Any())
+        }),
+        403: Type.Object({
+          error: Type.String()
         })
       }
     },
@@ -1288,7 +1334,7 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       
       // Verificar que sea admin
       if (usuario.rol !== 'ADMIN') {
-        return reply.forbidden('Solo los administradores pueden acceder a esta información');
+        return reply.code(403).send({ error: 'Solo los administradores pueden acceder a esta información' });
       }
 
       try {
@@ -1303,6 +1349,20 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
         }
 
         const departamento = departamentoRows[0];
+
+        // Verificar que todos los circuitos del departamento estén cerrados
+        const [circuitosAbiertosRows]: any[] = await db.query(
+          `SELECT COUNT(*) as circuitos_abiertos
+           FROM CIRCUITO c
+           JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+           JOIN LOCALIDAD l ON e.id_localidad = l.id
+           WHERE l.id_departamento = ? AND c.circuito_cerrado = 0`,
+          [idDepartamento]
+        );
+
+        if (circuitosAbiertosRows[0].circuitos_abiertos > 0) {
+          return reply.forbidden('Los resultados del departamento solo son visibles cuando todos sus circuitos estén cerrados');
+        }
 
         // Obtener estadísticas del departamento
         const [statsRows]: any[] = await db.query(
@@ -1441,6 +1501,9 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           resultados_listas: Type.Array(Type.Any()),
           resultados_partidos: Type.Array(Type.Any()),
           resultados_papeletas: Type.Array(Type.Any())
+        }),
+        403: Type.Object({
+          error: Type.String()
         })
       }
     },
@@ -1454,6 +1517,15 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
 
       try {
+        // Verificar que todos los circuitos estén cerrados
+        const [circuitosAbiertosRows]: any[] = await db.query(
+          `SELECT COUNT(*) as circuitos_abiertos FROM CIRCUITO WHERE circuito_cerrado = 0`
+        );
+
+        if (circuitosAbiertosRows[0].circuitos_abiertos > 0) {
+          return reply.forbidden('Los resultados generales solo son visibles cuando todos los circuitos estén cerrados');
+        }
+
         // Obtener estadísticas generales
         const [statsRows]: any[] = await db.query(
           `SELECT 
@@ -1551,6 +1623,476 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       } catch (error) {
         console.error('Error al obtener resultados generales:', error);
         return reply.internalServerError('Error interno al obtener resultados generales');
+      }
+    }
+  });
+
+  // ==================== FUNCIONARIO: ABRIR Y CERRAR MESA (CIRCUITO) ====================
+
+  // Abrir circuito (mesa) - FUNCIONARIO
+  fastify.post("/circuito/abrir", {
+    schema: {
+      tags: ["circuito", "funcionario"],
+      summary: "Abrir el circuito (mesa) del funcionario",
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          mensaje: Type.String()
+        }),
+        403: Type.Object({
+          error: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      if (usuario.rol !== 'FUNCIONARIO') {
+        return reply.code(403).send({ error: 'Solo los funcionarios pueden abrir su circuito' });
+      }
+      try {
+        // Obtener el circuito del funcionario
+        const [circuitoRows]: any[] = await db.query(
+          `SELECT c.id FROM CIUDADANO ci
+           JOIN PADRON p ON ci.credencial = p.credencial
+           JOIN CIRCUITO c ON p.id_circuito = c.id
+           WHERE ci.credencial = ?`,
+          [usuario.credencial]
+        );
+        if (circuitoRows.length === 0) {
+          return reply.notFound('Funcionario no encontrado en el padrón');
+        }
+        const idCircuito = circuitoRows[0].id;
+        // Abrir el circuito
+        await db.query(
+          `UPDATE CIRCUITO SET circuito_cerrado = 0 WHERE id = ?`,
+          [idCircuito]
+        );
+        return { success: true, mensaje: 'Circuito abierto correctamente' };
+      } catch (error) {
+        console.error('Error al abrir circuito:', error);
+        return reply.internalServerError('Error interno al abrir circuito');
+      }
+    }
+  });
+
+  // Cerrar circuito (mesa) - FUNCIONARIO
+  fastify.post("/circuito/cerrar", {
+    schema: {
+      tags: ["circuito", "funcionario"],
+      summary: "Cerrar el circuito (mesa) del funcionario",
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          mensaje: Type.String()
+        }),
+        403: Type.Object({
+          error: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      if (usuario.rol !== 'FUNCIONARIO') {
+        return reply.code(403).send({ error: 'Solo los funcionarios pueden cerrar su circuito' });
+      }
+      try {
+        // Obtener el circuito del funcionario
+        const [circuitoRows]: any[] = await db.query(
+          `SELECT c.id FROM CIUDADANO ci
+           JOIN PADRON p ON ci.credencial = p.credencial
+           JOIN CIRCUITO c ON p.id_circuito = c.id
+           WHERE ci.credencial = ?`,
+          [usuario.credencial]
+        );
+        if (circuitoRows.length === 0) {
+          return reply.notFound('Funcionario no encontrado en el padrón');
+        }
+        const idCircuito = circuitoRows[0].id;
+        // Cerrar el circuito
+        await db.query(
+          `UPDATE CIRCUITO SET circuito_cerrado = 1 WHERE id = ?`,
+          [idCircuito]
+        );
+        return { success: true, mensaje: 'Circuito cerrado correctamente' };
+      } catch (error) {
+        console.error('Error al cerrar circuito:', error);
+        return reply.internalServerError('Error interno al cerrar circuito');
+      }
+    }
+  });
+
+  // ==================== ADMIN: GESTIÓN GLOBAL DE CIRCUITOS ====================
+
+  // Abrir TODAS las mesas - ADMIN
+  fastify.post("/admin/circuitos/abrir-todos", {
+    schema: {
+      tags: ["admin", "circuito"],
+      summary: "Abrir todas las mesas (solo admin)",
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          mensaje: Type.String(),
+          circuitos_abiertos: Type.Number()
+        }),
+        403: Type.Object({
+          error: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      if (usuario.rol !== 'ADMIN') {
+        return reply.code(403).send({ error: 'Solo los administradores pueden abrir todas las mesas' });
+      }
+      try {
+        // Abrir todos los circuitos
+        const [result]: any[] = await db.query(
+          `UPDATE CIRCUITO SET circuito_cerrado = 0`
+        );
+        
+        const circuitosAbiertos = result.affectedRows;
+        
+        return { 
+          success: true, 
+          mensaje: `Todas las mesas han sido abiertas correctamente`,
+          circuitos_abiertos: circuitosAbiertos
+        };
+      } catch (error) {
+        console.error('Error al abrir todas las mesas:', error);
+        return reply.internalServerError('Error interno al abrir todas las mesas');
+      }
+    }
+  });
+
+  // Cerrar TODAS las mesas - ADMIN
+  fastify.post("/admin/circuitos/cerrar-todos", {
+    schema: {
+      tags: ["admin", "circuito"],
+      summary: "Cerrar todas las mesas (solo admin)",
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          mensaje: Type.String(),
+          circuitos_cerrados: Type.Number()
+        }),
+        403: Type.Object({
+          error: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      if (usuario.rol !== 'ADMIN') {
+        return reply.code(403).send({ error: 'Solo los administradores pueden cerrar todas las mesas' });
+      }
+      try {
+        // Cerrar todos los circuitos
+        const [result]: any[] = await db.query(
+          `UPDATE CIRCUITO SET circuito_cerrado = 1`
+        );
+        
+        const circuitosCerrados = result.affectedRows;
+        
+        return { 
+          success: true, 
+          mensaje: `Todas las mesas han sido cerradas correctamente`,
+          circuitos_cerrados: circuitosCerrados
+        };
+      } catch (error) {
+        console.error('Error al cerrar todas las mesas:', error);
+        return reply.internalServerError('Error interno al cerrar todas las mesas');
+      }
+    }
+  });
+
+  // ==================== ADMIN: GESTIÓN DE AUTORIDADES ====================
+
+  // Obtener lista de circuitos - ADMIN
+  fastify.get("/admin/circuitos", {
+    schema: {
+      tags: ["admin", "circuito"],
+      summary: "Obtener lista de circuitos para admin",
+      response: {
+        200: Type.Array(Type.Object({
+          id: Type.Number(),
+          numero: Type.String(),
+          departamento: Type.String()
+        })),
+        403: Type.Object({
+          error: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      
+      if (usuario.rol !== 'ADMIN') {
+        return reply.code(403).send({ error: 'Solo los administradores pueden acceder a esta información' });
+      }
+
+      try {
+        const [rows]: any[] = await db.query(
+          `SELECT 
+            c.id,
+            c.numero,
+            d.nombre as departamento
+           FROM CIRCUITO c
+           JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+           JOIN LOCALIDAD l ON e.id_localidad = l.id
+           JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+           ORDER BY d.nombre, c.numero`
+        );
+
+        return rows;
+      } catch (error) {
+        console.error('Error al obtener circuitos:', error);
+        return reply.internalServerError('Error interno al obtener circuitos');
+      }
+    }
+  });
+
+  // Obtener autoridades de un circuito - ADMIN
+  fastify.get("/admin/circuito/:idCircuito/autoridades", {
+    schema: {
+      tags: ["admin", "autoridades"],
+      summary: "Obtener autoridades de un circuito específico",
+      params: Type.Object({
+        idCircuito: Type.Number()
+      }),
+      response: {
+        200: Type.Object({
+          presidente: Type.Any(),
+          secretario: Type.Any(),
+          vocal: Type.Any()
+        }),
+        403: Type.Object({
+          error: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      const { idCircuito } = request.params as { idCircuito: number };
+      
+      if (usuario.rol !== 'ADMIN') {
+        return reply.code(403).send({ error: 'Solo los administradores pueden acceder a esta información' });
+      }
+      
+      try {
+        // Obtener autoridades del circuito (que están en EMPLEADO)
+        const [autoridadesRows]: any[] = await db.query(
+          `SELECT 
+            c.cc_presidente,
+            c.cc_secretario,
+            c.cc_vocal,
+            pres_ci.nombres as presidente_nombres,
+            CONCAT(pres_ci.apellido1, ' ', COALESCE(pres_ci.apellido2, '')) as presidente_apellidos,
+            sec_ci.nombres as secretario_nombres,
+            CONCAT(sec_ci.apellido1, ' ', COALESCE(sec_ci.apellido2, '')) as secretario_apellidos,
+            voc_ci.nombres as vocal_nombres,
+            CONCAT(voc_ci.apellido1, ' ', COALESCE(voc_ci.apellido2, '')) as vocal_apellidos
+           FROM CIRCUITO c
+           LEFT JOIN EMPLEADO pres_emp ON c.cc_presidente = pres_emp.credencial
+           LEFT JOIN CIUDADANO pres_ci ON pres_emp.credencial = pres_ci.credencial
+           LEFT JOIN EMPLEADO sec_emp ON c.cc_secretario = sec_emp.credencial
+           LEFT JOIN CIUDADANO sec_ci ON sec_emp.credencial = sec_ci.credencial
+           LEFT JOIN EMPLEADO voc_emp ON c.cc_vocal = voc_emp.credencial
+           LEFT JOIN CIUDADANO voc_ci ON voc_emp.credencial = voc_ci.credencial
+           WHERE c.id = ?`,
+          [idCircuito]
+        );
+
+        if (autoridadesRows.length === 0) {
+          return reply.notFound('Circuito no encontrado');
+        }
+
+        const row = autoridadesRows[0];
+        
+        const autoridades: any = {
+          presidente: row.cc_presidente ? {
+            credencial: row.cc_presidente,
+            nombres: row.presidente_nombres,
+            apellidos: row.presidente_apellidos
+          } : null,
+          secretario: row.cc_secretario ? {
+            credencial: row.cc_secretario,
+            nombres: row.secretario_nombres,
+            apellidos: row.secretario_apellidos
+          } : null,
+          vocal: row.cc_vocal ? {
+            credencial: row.cc_vocal,
+            nombres: row.vocal_nombres,
+            apellidos: row.vocal_apellidos
+          } : null
+        };
+
+        return autoridades;
+      } catch (error) {
+        console.error('Error al obtener autoridades del circuito:', error);
+        return reply.internalServerError('Error interno al obtener autoridades');
+      }
+    }
+  });
+
+  // Obtener lista de empleados - ADMIN
+  fastify.get("/admin/empleados", {
+    schema: {
+      tags: ["admin", "empleados"],
+      summary: "Obtener lista de empleados para admin",
+      response: {
+        200: Type.Array(Type.Object({
+          credencial: Type.String(),
+          nombres: Type.String(),
+          apellidos: Type.String()
+        })),
+        403: Type.Object({
+          error: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      
+      if (usuario.rol !== 'ADMIN') {
+        return reply.code(403).send({ error: 'Solo los administradores pueden acceder a esta información' });
+      }
+      
+      try {
+        const [rows]: any[] = await db.query(
+          `SELECT 
+            e.credencial,
+            c.nombres,
+            CONCAT(c.apellido1, ' ', COALESCE(c.apellido2, '')) as apellidos
+           FROM EMPLEADO e
+           JOIN CIUDADANO c ON e.credencial = c.credencial
+           ORDER BY c.nombres, c.apellido1`
+        );
+
+        return rows;
+      } catch (error) {
+        console.error('Error al obtener empleados:', error);
+        return reply.internalServerError('Error interno al obtener empleados');
+      }
+    }
+  });
+
+  // Modificar autoridades de un circuito - ADMIN
+  fastify.put("/admin/circuito/:idCircuito/autoridades", {
+    schema: {
+      tags: ["admin", "autoridades"],
+      summary: "Modificar autoridades de un circuito específico",
+      params: Type.Object({
+        idCircuito: Type.Number()
+      }),
+      body: Type.Object({
+        presidente: Type.Optional(Type.String()),
+        secretario: Type.Optional(Type.String()),
+        vocal: Type.Optional(Type.String())
+      }),
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          mensaje: Type.String()
+        }),
+        403: Type.Object({
+          error: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+      const { idCircuito } = request.params as { idCircuito: number };
+      const { presidente, secretario, vocal } = request.body as {
+        presidente?: string;
+        secretario?: string;
+        vocal?: string;
+      };
+      
+      if (usuario.rol !== 'ADMIN') {
+        return reply.code(403).send({ error: 'Solo los administradores pueden modificar autoridades' });
+      }
+      
+      try {
+        // Verificar que el circuito existe
+        const [circuitoRows]: any[] = await db.query(
+          `SELECT id FROM CIRCUITO WHERE id = ?`,
+          [idCircuito]
+        );
+        
+        if (circuitoRows.length === 0) {
+          return reply.notFound('Circuito no encontrado');
+        }
+
+        // Verificar que los empleados existen si se proporcionan credenciales
+        if (presidente) {
+          const [empleadoRows]: any[] = await db.query(
+            `SELECT credencial FROM EMPLEADO WHERE credencial = ?`,
+            [presidente]
+          );
+          if (empleadoRows.length === 0) {
+            return reply.badRequest('Empleado con credencial de presidente no encontrado');
+          }
+        }
+        
+        if (secretario) {
+          const [empleadoRows]: any[] = await db.query(
+            `SELECT credencial FROM EMPLEADO WHERE credencial = ?`,
+            [secretario]
+          );
+          if (empleadoRows.length === 0) {
+            return reply.badRequest('Empleado con credencial de secretario no encontrado');
+          }
+        }
+        
+        if (vocal) {
+          const [empleadoRows]: any[] = await db.query(
+            `SELECT credencial FROM EMPLEADO WHERE credencial = ?`,
+            [vocal]
+          );
+          if (empleadoRows.length === 0) {
+            return reply.badRequest('Empleado con credencial de vocal no encontrado');
+          }
+        }
+
+        // Construir la consulta de actualización
+        let updateQuery = 'UPDATE CIRCUITO SET ';
+        const updateParams: any[] = [];
+        
+        if (presidente !== undefined) {
+          updateQuery += 'cc_presidente = ?, ';
+          updateParams.push(presidente || null);
+        }
+        if (secretario !== undefined) {
+          updateQuery += 'cc_secretario = ?, ';
+          updateParams.push(secretario || null);
+        }
+        if (vocal !== undefined) {
+          updateQuery += 'cc_vocal = ?, ';
+          updateParams.push(vocal || null);
+        }
+        
+        // Remover la última coma y espacio
+        updateQuery = updateQuery.slice(0, -2);
+        updateQuery += ' WHERE id = ?';
+        updateParams.push(idCircuito);
+
+        await db.query(updateQuery, updateParams);
+
+        return { 
+          success: true, 
+          mensaje: 'Autoridades del circuito actualizadas correctamente' 
+        };
+      } catch (error) {
+        console.error('Error al modificar autoridades del circuito:', error);
+        return reply.internalServerError('Error interno al modificar autoridades');
       }
     }
   });

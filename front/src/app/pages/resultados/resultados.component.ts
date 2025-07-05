@@ -129,6 +129,12 @@ export class ResultadosComponent implements OnInit {
       // Cargar información del circuito
       this.infoCircuito = await this.eleccionesService.getInfoCircuito();
       
+      // Verificar si el circuito está cerrado
+      if (!this.infoCircuito.circuito.cerrado) {
+        this.error = 'Los resultados solo son visibles cuando el circuito esté cerrado. Por favor, cierre la mesa primero.';
+        return;
+      }
+      
       // Cargar resultados por lista
       this.resultadosListas = await this.eleccionesService.getResultadosListasCircuito();
       
@@ -138,9 +144,13 @@ export class ResultadosComponent implements OnInit {
       // Cargar resultados de papeletas
       this.resultadosPapeletas = await this.eleccionesService.getResultadosPapeletasCircuito();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar resultados:', error);
-      this.error = 'Error al cargar los resultados';
+      if (error.status === 403) {
+        this.error = 'Los resultados solo son visibles cuando el circuito esté cerrado. Por favor, cierre la mesa primero.';
+      } else {
+        this.error = 'Error al cargar los resultados';
+      }
     } finally {
       this.loading = false;
     }
@@ -177,9 +187,13 @@ export class ResultadosComponent implements OnInit {
     try {
       this.resultadosAdmin = await this.eleccionesService.getResultadosGeneralesAdmin();
       this.vistaSeleccionada = 'generales';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar resultados generales:', error);
-      this.error = 'Error al cargar los resultados generales';
+      if (error.status === 403) {
+        this.error = 'Los resultados generales solo son visibles cuando todos los circuitos estén cerrados.';
+      } else {
+        this.error = 'Error al cargar los resultados generales';
+      }
     } finally {
       this.loading = false;
     }
@@ -198,9 +212,13 @@ export class ResultadosComponent implements OnInit {
     try {
       this.resultadosAdmin = await this.eleccionesService.getResultadosCircuitoAdmin(this.circuitoSeleccionado);
       this.vistaSeleccionada = 'circuito';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar resultados del circuito:', error);
-      this.error = 'Error al cargar los resultados del circuito';
+      if (error.status === 403) {
+        this.error = 'Los resultados del circuito solo son visibles cuando esté cerrado.';
+      } else {
+        this.error = 'Error al cargar los resultados del circuito';
+      }
     } finally {
       this.loading = false;
     }
@@ -219,9 +237,13 @@ export class ResultadosComponent implements OnInit {
     try {
       this.resultadosAdmin = await this.eleccionesService.getResultadosDepartamentoAdmin(this.departamentoSeleccionado);
       this.vistaSeleccionada = 'departamento';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar resultados del departamento:', error);
-      this.error = 'Error al cargar los resultados del departamento';
+      if (error.status === 403) {
+        this.error = 'Los resultados del departamento solo son visibles cuando todos sus circuitos estén cerrados.';
+      } else {
+        this.error = 'Error al cargar los resultados del departamento';
+      }
     } finally {
       this.loading = false;
     }

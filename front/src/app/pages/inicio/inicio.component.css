@@ -13,6 +13,8 @@
   margin-top: 0;
   margin-bottom: 1rem;
   color: #333;
+  font-size: 1.2rem;
+  font-weight: 500;
 }
 
 .botones-grupo {
@@ -30,4 +32,51 @@
   padding: 1rem;
   font-size: 1.1rem;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.botones-grupo button mat-icon {
+  font-size: 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* Estilos para el contenedor principal */
+.confirmar-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para la información del usuario */
+.datos-usuario {
+  background-color: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+.datos-usuario p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.datos-usuario strong {
+  color: #1976d2;
+}
+
+/* Título principal */
+.confirmar-container h2 {
+  text-align: center;
+  color: #1976d2;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  font-weight: 500;
 }

@@ -11,8 +11,14 @@
   <div class="acciones-comunes">
     <h3>Acciones Generales</h3>
     <div class="botones-grupo">
-      <button mat-raised-button color="primary" (click)="irAVotar()">Votar</button>
-      <button mat-raised-button color="accent" (click)="verResultados()">Acceder a Resultados</button>
+      <button mat-raised-button color="primary" (click)="irAVotar()">
+        <mat-icon>how_to_vote</mat-icon>
+        Votar
+      </button>
+      <button mat-raised-button color="accent" (click)="verResultados()">
+        <mat-icon>analytics</mat-icon>
+        Ver Resultados
+      </button>
     </div>
   </div>
 
@@ -21,18 +27,42 @@
     <div class="seccion-rol">
       <h3>Gestión de Elecciones</h3>
       <div class="botones-grupo">
-        <button mat-raised-button color="primary" (click)="abrirEleccion()">Abrir Elección</button>
-        <button mat-raised-button color="warn" (click)="cerrarEleccion()">Cerrar Elección</button>
-        <button mat-raised-button color="primary" (click)="crearEleccion()">Crear Elección</button>
-        <button mat-raised-button color="accent" (click)="editarEleccion()">Editar Elección</button>
+        <button mat-raised-button color="primary" (click)="abrirEleccion()">
+          <mat-icon>lock_open</mat-icon>
+          Abrir Todas las Mesas
+        </button>
+        <button mat-raised-button color="warn" (click)="cerrarEleccion()">
+          <mat-icon>lock</mat-icon>
+          Cerrar Todas las Mesas
+        </button>
       </div>
     </div>
 
     <div class="seccion-rol">
-      <h3>Gestión de Configuración</h3>
+      <h3>Gestión de Ciudadanos y Padrón</h3>
       <div class="botones-grupo">
-        <button mat-raised-button color="accent" (click)="editarCircuito()">Editar Circuito</button>
-        <button mat-raised-button color="accent" (click)="editarEstablecimiento()">Editar Establecimiento</button>
+        <button mat-raised-button color="primary" (click)="crearEleccion()">
+          <mat-icon>person_add</mat-icon>
+          Gestionar Ciudadanos
+        </button>
+        <button mat-raised-button color="accent" (click)="editarEleccion()">
+          <mat-icon>people</mat-icon>
+          Gestionar Padrón
+        </button>
+      </div>
+    </div>
+
+    <div class="seccion-rol">
+      <h3>Gestión de Autoridades y Personal</h3>
+      <div class="botones-grupo">
+        <button mat-raised-button color="accent" (click)="editarCircuito()">
+          <mat-icon>admin_panel_settings</mat-icon>
+          Modificar Autoridades
+        </button>
+        <button mat-raised-button color="accent" (click)="editarEstablecimiento()">
+          <mat-icon>business</mat-icon>
+          Gestionar Empleados
+        </button>
       </div>
     </div>
   </ng-container>
@@ -42,8 +72,18 @@
     <div class="seccion-rol">
       <h3>Gestión de Mesa</h3>
       <div class="botones-grupo">
-        <button mat-raised-button color="primary" (click)="validarVotante()">Validar Votante</button>
-        <button mat-raised-button color="warn" (click)="cerrarMesa()">Cerrar Mesa</button>
+        <button mat-raised-button color="primary" (click)="abrirMesa()">
+          <mat-icon>lock_open</mat-icon>
+          Abrir Mesa
+        </button>
+        <button mat-raised-button color="warn" (click)="cerrarMesa()">
+          <mat-icon>lock</mat-icon>
+          Cerrar Mesa
+        </button>
+        <button mat-raised-button color="accent" (click)="validarVotante()">
+          <mat-icon>verified_user</mat-icon>
+          Validar Votante
+        </button>
       </div>
     </div>
   </ng-container>
