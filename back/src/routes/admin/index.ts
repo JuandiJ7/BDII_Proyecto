@@ -389,6 +389,72 @@ const adminRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
   });
 
+  // ==================== ACTUALIZACIÓN MASIVA DE PADRÓN ====================
+  fastify.post("/padron/actualizar", {
+    schema: {
+      tags: ["admin"],
+      summary: "Actualizar el padrón agregando automáticamente todos los ciudadanos que no estén en el padrón y tengan circuito asignado",
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          agregados: Type.Number(),
+          sin_circuito: Type.Number(),
+          mensaje: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
+    handler: async function (request, reply) {
+      try {
+        // Obtener ciudadanos sin padrón
+        const [ciudadanos]: any[] = await db.query(
+          `SELECT c.credencial FROM CIUDADANO c
+           LEFT JOIN PADRON p ON c.credencial = p.credencial
+           WHERE p.credencial IS NULL`
+        );
+
+        let agregados = 0;
+        let sin_circuito = 0;
+
+        for (const ciudadano of ciudadanos) {
+          // Extraer serie y número de la credencial
+          const credencial = ciudadano.credencial;
+          const serie = credencial.substring(0, 3);
+          const numero = parseInt(credencial.substring(3), 10);
+
+          // Buscar circuito correspondiente
+          const [circuitoRows]: any[] = await db.query(
+            `SELECT id FROM CIRCUITO WHERE ? BETWEEN serie_desde AND serie_hasta AND ? BETWEEN numero_desde AND numero_hasta LIMIT 1`,
+            [serie, numero]
+          );
+
+          if (circuitoRows.length === 0) {
+            sin_circuito++;
+            continue;
+          }
+          const id_circuito = circuitoRows[0].id;
+
+          // Insertar en padrón
+          await db.query(
+            `INSERT INTO PADRON (credencial, id_circuito, habilitado, voto) VALUES (?, ?, 0, 0)` ,
+            [credencial, id_circuito]
+          );
+          agregados++;
+        }
+
+        return {
+          success: true,
+          agregados,
+          sin_circuito,
+          mensaje: `Se agregaron ${agregados} ciudadanos al padrón. ${sin_circuito} no tenían circuito y no fueron agregados.`
+        };
+      } catch (error) {
+        console.error('Error al actualizar padrón:', error);
+        return reply.internalServerError('Error interno al actualizar padrón');
+      }
+    }
+  });
+
   // ==================== GESTIÓN DE POLICÍAS ====================
   
   // Obtener policías
@@ -562,6 +628,78 @@ const adminRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
   });
 
+  // Editar policía (cambiar comisaría y establecimiento)
+  fastify.put("/policias/:credencial", {
+    schema: {
+      tags: ["admin"],
+      summary: "Editar un policía (comisaría y establecimiento)",
+      params: Type.Object({
+        credencial: Type.String()
+      }),
+      body: Type.Object({
+        id_comisaria: Type.Number(),
+        id_establecimiento: Type.Number()
+      }),
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          mensaje: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
+    handler: async function (request, reply) {
+      const { credencial } = request.params as { credencial: string };
+      const { id_comisaria, id_establecimiento } = request.body as {
+        id_comisaria: number;
+        id_establecimiento: number;
+      };
+
+      try {
+        // Verificar que el policía existe
+        const [policiaRows]: any[] = await db.query(
+          `SELECT credencial FROM POLICIA WHERE credencial = ?`,
+          [credencial]
+        );
+        if (policiaRows.length === 0) {
+          return reply.notFound('Policía no encontrado');
+        }
+
+        // Verificar que la comisaría existe
+        const [comisariaRows]: any[] = await db.query(
+          `SELECT id FROM COMISARIA WHERE id = ?`,
+          [id_comisaria]
+        );
+        if (comisariaRows.length === 0) {
+          return reply.badRequest('Comisaría no encontrada');
+        }
+
+        // Verificar que el establecimiento existe
+        const [establecimientoRows]: any[] = await db.query(
+          `SELECT id FROM ESTABLECIMIENTO WHERE id = ?`,
+          [id_establecimiento]
+        );
+        if (establecimientoRows.length === 0) {
+          return reply.badRequest('Establecimiento no encontrado');
+        }
+
+        // Actualizar comisaría y establecimiento
+        await db.query(
+          `UPDATE POLICIA SET id_comisaria = ?, id_establecimiento = ? WHERE credencial = ?`,
+          [id_comisaria, id_establecimiento, credencial]
+        );
+
+        return {
+          success: true,
+          mensaje: 'Policía actualizado correctamente'
+        };
+      } catch (error) {
+        console.error('Error al editar policía:', error);
+        return reply.internalServerError('Error interno al editar policía');
+      }
+    }
+  });
+
   // ==================== GESTIÓN DE EMPLEADOS ====================
   
   // Obtener empleados
@@ -720,6 +858,65 @@ const adminRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
   });
 
+  // Editar empleado (cambiar organismo)
+  fastify.put("/empleados/:credencial", {
+    schema: {
+      tags: ["admin"],
+      summary: "Editar un empleado (organismo)",
+      params: Type.Object({
+        credencial: Type.String()
+      }),
+      body: Type.Object({
+        id_organismo: Type.Number()
+      }),
+      response: {
+        200: Type.Object({
+          success: Type.Boolean(),
+          mensaje: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
+    handler: async function (request, reply) {
+      const { credencial } = request.params as { credencial: string };
+      const { id_organismo } = request.body as { id_organismo: number };
+
+      try {
+        // Verificar que el empleado existe
+        const [empleadoRows]: any[] = await db.query(
+          `SELECT credencial FROM EMPLEADO WHERE credencial = ?`,
+          [credencial]
+        );
+        if (empleadoRows.length === 0) {
+          return reply.notFound('Empleado no encontrado');
+        }
+
+        // Verificar que el organismo existe
+        const [organismoRows]: any[] = await db.query(
+          `SELECT id FROM ORGANISMO WHERE id = ?`,
+          [id_organismo]
+        );
+        if (organismoRows.length === 0) {
+          return reply.badRequest('Organismo no encontrado');
+        }
+
+        // Actualizar organismo
+        await db.query(
+          `UPDATE EMPLEADO SET id_organismo = ? WHERE credencial = ?`,
+          [id_organismo, credencial]
+        );
+
+        return {
+          success: true,
+          mensaje: 'Empleado actualizado correctamente'
+        };
+      } catch (error) {
+        console.error('Error al editar empleado:', error);
+        return reply.internalServerError('Error interno al editar empleado');
+      }
+    }
+  });
+
   // ==================== DATOS AUXILIARES ====================
   
   // Obtener comisarías
@@ -774,6 +971,69 @@ const adminRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       } catch (error) {
         console.error('Error al obtener organismos:', error);
         return reply.internalServerError('Error interno al obtener organismos');
+      }
+    }
+  });
+
+  // Obtener establecimientos
+  fastify.get("/establecimientos", {
+    schema: {
+      tags: ["admin"],
+      summary: "Obtener todos los establecimientos",
+      response: {
+        200: Type.Array(Type.Object({
+          id: Type.Number(),
+          direccion: Type.String()
+        }))
+      }
+    },
+    onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
+    handler: async function (request, reply) {
+      try {
+        const [rows]: any[] = await db.query(
+          `SELECT id, direccion FROM ESTABLECIMIENTO ORDER BY direccion`
+        );
+
+        return rows;
+
+      } catch (error) {
+        console.error('Error al obtener establecimientos:', error);
+        return reply.internalServerError('Error interno al obtener establecimientos');
+      }
+    }
+  });
+
+  // Obtener ciudadanos que no son empleados
+  fastify.get("/ciudadanos/sin-empleado", {
+    schema: {
+      tags: ["admin"],
+      summary: "Obtener ciudadanos que no están en la tabla EMPLEADO",
+      response: {
+        200: Type.Array(Type.Object({
+          credencial: Type.String(),
+          nombres: Type.String(),
+          apellido1: Type.String(),
+          apellido2: Type.Optional(Type.String()),
+          cedula: Type.String(),
+          fecha_nac: Type.String(),
+          direccion: Type.String()
+        }))
+      }
+    },
+    onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
+    handler: async function (request, reply) {
+      try {
+        const [rows]: any[] = await db.query(
+          `SELECT c.*
+           FROM CIUDADANO c
+           LEFT JOIN EMPLEADO e ON c.credencial = e.credencial
+           WHERE e.credencial IS NULL
+           ORDER BY c.apellido1, c.apellido2, c.nombres`
+        );
+        return rows;
+      } catch (error) {
+        console.error('Error al obtener ciudadanos sin empleado:', error);
+        return reply.internalServerError('Error interno al obtener ciudadanos sin empleado');
       }
     }
   });
