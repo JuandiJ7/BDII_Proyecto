@@ -113,9 +113,14 @@ export class FetchService {
 
   async delete<T>(endpoint: string): Promise<T> {
     try {
+      const headers = new Headers();
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers.append('Authorization', `Bearer ${token}`);
+      }
       const response = await fetch(`${this.urlBase}${endpoint}`, {
         method: 'DELETE',
-        headers: this.getHeaders()
+        headers
       });
 
       if (!response.ok) {

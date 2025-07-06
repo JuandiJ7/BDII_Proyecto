@@ -152,11 +152,62 @@ export class EleccionesService {
 
   // Obtener lista de empleados - ADMIN
   async getEmpleados(): Promise<any> {
-    return this.fetchService.get(`${this.apiUrl}/admin/empleados`);
+    return this.fetchService.get(`/admin/empleados`);
   }
 
   // Modificar autoridades de un circuito - ADMIN
   async modificarAutoridadesCircuito(idCircuito: number, autoridades: any): Promise<any> {
     return this.fetchService.put(`${this.apiUrl}/admin/circuito/${idCircuito}/autoridades`, JSON.stringify(autoridades));
+  }
+
+  // ==================== PADRÓN ====================
+  async actualizarPadron(): Promise<any> {
+    return this.fetchService.post(`/admin/padron/actualizar`, '{}');
+  }
+
+  // ==================== CIUDADANOS ====================
+  async crearCiudadano(data: any): Promise<any> {
+    return this.fetchService.post(`/admin/ciudadanos`, JSON.stringify(data));
+  }
+
+  // ==================== EMPLEADOS ====================
+  async listarEmpleados(): Promise<any> {
+    return this.fetchService.get(`/admin/empleados`);
+  }
+  async agregarEmpleado(data: any): Promise<any> {
+    return this.fetchService.post(`/admin/empleados`, JSON.stringify(data));
+  }
+  async editarEmpleado(credencial: string, data: any): Promise<any> {
+    return this.fetchService.put(`/admin/empleados/${credencial}`, JSON.stringify(data));
+  }
+  async eliminarEmpleado(credencial: string): Promise<any> {
+    return this.fetchService.delete(`/admin/empleados/${credencial}`);
+  }
+  async listarOrganismos(): Promise<any> {
+    return this.fetchService.get(`/admin/organismos`);
+  }
+
+  // ==================== POLICÍAS ====================
+  async listarPolicias(): Promise<any> {
+    return this.fetchService.get(`/admin/policias`);
+  }
+  async agregarPolicia(data: any): Promise<any> {
+    return this.fetchService.post(`/admin/policias`, JSON.stringify(data));
+  }
+  async editarPolicia(credencial: string, data: any): Promise<any> {
+    return this.fetchService.put(`/admin/policias/${credencial}`, JSON.stringify(data));
+  }
+  async eliminarPolicia(credencial: string): Promise<any> {
+    return this.fetchService.delete(`/admin/policias/${credencial}`);
+  }
+  async listarComisarias(): Promise<any> {
+    return this.fetchService.get(`/admin/comisarias`);
+  }
+  async listarEstablecimientos(): Promise<any> {
+    return this.fetchService.get(`/admin/establecimientos`);
+  }
+
+  async listarCiudadanosSinEmpleado(): Promise<any> {
+    return this.fetchService.get(`/admin/ciudadanos/sin-empleado`);
   }
 } 

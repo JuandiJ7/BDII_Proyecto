@@ -7,6 +7,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { AutoridadesModalComponent } from '../admin/autoridades-modal.component';
+import { AvisoDialogComponent } from '../../components/aviso-dialog/aviso-dialog.component';
 
 type Usuario = {
   nombre: string;
@@ -32,6 +33,8 @@ type Usuario = {
 })
 export class InicioComponent implements OnInit {
   usuario: Usuario | null = null;
+  mensajePadron: string = '';
+  cargandoPadron: boolean = false;
 
   constructor(
     private router: Router,
@@ -147,5 +150,28 @@ export class InicioComponent implements OnInit {
 
   validarVotante(): void {
     this.router.navigate(['/confirmar-circuito']);
+  }
+
+  async actualizarPadronDirecto(): Promise<void> {
+    const dialogRef = this.dialog.open(AvisoDialogComponent, {
+      data: { mensaje: '¿Está seguro que desea actualizar el padrón? Se agregarán automáticamente todos los ciudadanos que correspondan.' },
+      disableClose: true
+    });
+    const result = await dialogRef.afterClosed().toPromise();
+    if (result !== true) return;
+    this.cargandoPadron = true;
+    this.mensajePadron = '';
+    try {
+      const res = await this.eleccionesService.actualizarPadron();
+      this.mensajePadron = res.mensaje;
+    } catch (error) {
+      this.mensajePadron = 'Error al actualizar el padrón';
+    } finally {
+      this.cargandoPadron = false;
+    }
+  }
+
+  gestionarPolicias(): void {
+    this.router.navigate(['/admin/policias']);
   }
 }
