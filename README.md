@@ -17,14 +17,14 @@
   - Realizar los pasos de instalación del ambiente en una terminal de Ubuntu
 #### Pasos
 1. Clonar el repositorio:
-- git clone https://github.com/JuandiJ7/BDII_Proyecto
-- cd BDII_Proyecto
-- code . (abrir Visual Studio Code)
+  - git clone https://github.com/JuandiJ7/BDII_Proyecto
+  - cd BDII_Proyecto
+  - code . (abrir Visual Studio Code)
 2. Levantar los servicios:
-- docker compose up --build
+  - docker compose up --build
 3. Acceder a la app:
-- Frontend: http://localhost
-- Backend (API): http://localhost/back
+  - Frontend: http://localhost
+  - Backend (API): http://localhost/back
 
 4. Datos para acceder a la BD en DataGrip>
 ![image](https://github.com/user-attachments/assets/10960880-cb82-49bd-9b2e-06e1b66c3f3b)
