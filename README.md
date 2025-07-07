@@ -3,16 +3,17 @@
 ### Tecnologías utilizadas
 - Frontend: Angular
 - Backend: Fastify (Node.js)
-- Base de datos: MySQL
+- Base de datos: MySQL / DataGrip / Datacenter UCU
 - Proxy: Nginx
 - Contenedores: Docker & Docker Compose
 ### Cómo ejecutar el proyecto
 #### Requisitos
 - Docker
 - Docker Compose
-- (Recomendado pero opcional) WSL Ubuntu:
+- (Recomendado pero opcional) WSL Ubuntu + Docker:
        - Abrir la consola de comandos de Windows
        - Ejecutar el comando wsl --install
+       - Instalar Docker en terminal de Ubuntu (https://docs.docker.com/engine/install/ubuntu/)
        - Realizar los pasos de instalación del ambiente en una terminal de Ubuntu
 #### Pasos
 1. Clonar el repositorio:
@@ -38,7 +39,7 @@
 ### Scripts y datos
 ### Scripts y datos
 
-**Usuarios VOTANTES de ejemplo (Circuito 1 Montevideo):**
+**Usuarios VOTANTES HABILITADOS de ejemplo (Circuito 1 Montevideo):**
 
 | Serie | Número | Contraseña |
 |-------|--------|-------------|
