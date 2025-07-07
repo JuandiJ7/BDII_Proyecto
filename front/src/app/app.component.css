@@ -2,9 +2,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: calc(100vh - 120px); /* 100% alto - header y footer */
   padding: 1rem;
+  flex: 1;
 }
+
 
 .login-box {
   background: #f9f9f9;

@@ -1634,6 +1634,9 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     schema: {
       tags: ["circuito", "funcionario"],
       summary: "Abrir el circuito (mesa) del funcionario",
+      body: Type.Object({
+        id_circuito: Type.Number()
+      }),
       response: {
         200: Type.Object({
           success: Type.Boolean(),
@@ -1647,28 +1650,31 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     onRequest: [fastify.verifyJWT],
     handler: async function (request, reply) {
       const usuario = request.user as unknown as UsuarioLoginType;
+      const { id_circuito } = request.body as { id_circuito: number };
+
       if (usuario.rol !== 'FUNCIONARIO') {
         return reply.code(403).send({ error: 'Solo los funcionarios pueden abrir su circuito' });
       }
+
       try {
-        // Obtener el circuito del funcionario
+        // Verificar que el circuito tiene como presidente al usuario
         const [circuitoRows]: any[] = await db.query(
-          `SELECT c.id FROM CIUDADANO ci
-           JOIN PADRON p ON ci.credencial = p.credencial
-           JOIN CIRCUITO c ON p.id_circuito = c.id
-           WHERE ci.credencial = ?`,
-          [usuario.credencial]
+          `SELECT id FROM CIRCUITO WHERE id = ? AND cc_presidente = ? OR cc_secretario = ? OR cc_vocal = ?`,
+          [id_circuito, usuario.credencial, usuario.credencial, usuario.credencial]
         );
+
         if (circuitoRows.length === 0) {
-          return reply.notFound('Funcionario no encontrado en el padrón');
+          return reply.code(403).send({ error: 'No autorizado para abrir este circuito' });
         }
-        const idCircuito = circuitoRows[0].id;
+
         // Abrir el circuito
         await db.query(
           `UPDATE CIRCUITO SET circuito_cerrado = 0 WHERE id = ?`,
-          [idCircuito]
+          [id_circuito]
         );
+
         return { success: true, mensaje: 'Circuito abierto correctamente' };
+
       } catch (error) {
         console.error('Error al abrir circuito:', error);
         return reply.internalServerError('Error interno al abrir circuito');
@@ -1676,11 +1682,15 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
   });
 
+
   // Cerrar circuito (mesa) - FUNCIONARIO
   fastify.post("/circuito/cerrar", {
     schema: {
       tags: ["circuito", "funcionario"],
       summary: "Cerrar el circuito (mesa) del funcionario",
+      body: Type.Object({
+        id_circuito: Type.Number()
+      }),
       response: {
         200: Type.Object({
           success: Type.Boolean(),
@@ -1694,31 +1704,100 @@ const eleccionesRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     onRequest: [fastify.verifyJWT],
     handler: async function (request, reply) {
       const usuario = request.user as unknown as UsuarioLoginType;
+      const { id_circuito } = request.body as { id_circuito: number };
+
       if (usuario.rol !== 'FUNCIONARIO') {
         return reply.code(403).send({ error: 'Solo los funcionarios pueden cerrar su circuito' });
       }
+
       try {
-        // Obtener el circuito del funcionario
+        // Verificar que el circuito tiene como presidente al usuario
         const [circuitoRows]: any[] = await db.query(
-          `SELECT c.id FROM CIUDADANO ci
-           JOIN PADRON p ON ci.credencial = p.credencial
-           JOIN CIRCUITO c ON p.id_circuito = c.id
-           WHERE ci.credencial = ?`,
-          [usuario.credencial]
+          `SELECT id FROM CIRCUITO WHERE id = ? AND cc_presidente = ?`,
+          [id_circuito, usuario.credencial]
         );
+
         if (circuitoRows.length === 0) {
-          return reply.notFound('Funcionario no encontrado en el padrón');
+          return reply.code(403).send({ error: 'No autorizado para cerrar este circuito' });
         }
-        const idCircuito = circuitoRows[0].id;
+
         // Cerrar el circuito
         await db.query(
           `UPDATE CIRCUITO SET circuito_cerrado = 1 WHERE id = ?`,
-          [idCircuito]
+          [id_circuito]
         );
+
         return { success: true, mensaje: 'Circuito cerrado correctamente' };
+
       } catch (error) {
         console.error('Error al cerrar circuito:', error);
         return reply.internalServerError('Error interno al cerrar circuito');
+      }
+    }
+  });
+
+
+  //Obtener datos de circuito del cual el funcionario es autoridad
+  fastify.get("/circuito/mi-circuito", {
+    schema: {
+      tags: ["circuito", "funcionario"],
+      summary: "Obtener datos del circuito del funcionario",
+      response: {
+        200: Type.Object({
+          id: Type.Number(),
+          numero: Type.String(),
+          circuito_cerrado: Type.Boolean(),
+          departamento: Type.String(),
+          establecimiento: Type.String(),
+          presidente: Type.String(),
+          secretario: Type.String(),
+          vocal: Type.String()
+        }),
+        403: Type.Object({
+          error: Type.String()
+        }),
+        404: Type.Object({
+          error: Type.String()
+        })
+      }
+    },
+    onRequest: [fastify.verifyJWT],
+    handler: async function (request, reply) {
+      const usuario = request.user as unknown as UsuarioLoginType;
+
+      if (usuario.rol !== 'FUNCIONARIO') {
+        return reply.code(403).send({ error: 'Solo los funcionarios pueden consultar su circuito' });
+      }
+
+      try {
+        const [rows]: any[] = await db.query(
+          `SELECT 
+            c.id, c.numero, c.circuito_cerrado,
+            d.nombre AS departamento,
+            e.direccion AS establecimiento,
+            c.cc_presidente AS presidente,
+            c.cc_secretario AS secretario,
+            c.cc_vocal AS vocal
+          FROM CIRCUITO c
+          JOIN ESTABLECIMIENTO e ON c.id_establecimiento = e.id
+          JOIN LOCALIDAD l ON e.id_localidad = l.id
+          JOIN DEPARTAMENTO d ON l.id_departamento = d.id
+          WHERE c.cc_presidente = ? OR c.cc_secretario = ? OR c.cc_vocal = ?`,
+          [usuario.credencial, usuario.credencial, usuario.credencial]
+        );
+
+        if (rows.length === 0) {
+          return reply.code(404).send({ error: 'No se encontró un circuito asociado a este funcionario.' });
+        }
+
+        const circuito = rows[0];
+        circuito.circuito_cerrado = circuito.circuito_cerrado === 1;
+
+        return circuito;
+
+      } catch (error) {
+        console.error('Error al obtener circuito del funcionario:', error);
+        return reply.internalServerError('Error interno al consultar el circuito');
       }
     }
   });

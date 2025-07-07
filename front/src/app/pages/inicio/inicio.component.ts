@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { AutoridadesModalComponent } from '../admin/autoridades-modal.component';
 import { AvisoDialogComponent } from '../../components/aviso-dialog/aviso-dialog.component';
+import Swal from 'sweetalert2';
 
 type Usuario = {
   nombre: string;
@@ -18,6 +19,18 @@ type Usuario = {
   direccion_establecimiento: string;
   rol?: string;
 }
+
+type Circuito = {
+  id: number;
+  numero: string;
+  circuito_cerrado: boolean;
+  departamento: string;
+  establecimiento: string;
+  presidente: string;
+  secretario: string;
+  vocal: string;
+};
+
 
 @Component({
   selector: 'app-inicio',
@@ -35,6 +48,7 @@ export class InicioComponent implements OnInit {
   usuario: Usuario | null = null;
   mensajePadron: string = '';
   cargandoPadron: boolean = false;
+  circuitoFunc: Circuito | null = null;
 
   constructor(
     private router: Router,
@@ -44,24 +58,44 @@ export class InicioComponent implements OnInit {
   ) { }
 
   async ngOnInit(): Promise<void> {
-    this.usuario = await this.authService.getUsuarioActual();
-    console.log('Usuario en el componente de inicio:', this.usuario);
-    if (!this.usuario) {
-      // Si no hay usuario, redirigir al login
-      this.router.navigate(['/auth/login']);
+  this.usuario = await this.authService.getUsuarioActual();
+  console.log(this.usuario);
+
+  if (!this.usuario) {
+    this.router.navigate(['/auth/login']);
+  } else if (this.usuario.rol === 'FUNCIONARIO') {
+    try {
+      this.circuitoFunc = await this.eleccionesService.obtenerCircuito();
+      console.log('Circuito del funcionario:', this.circuitoFunc);
+    } catch (error) {
+      return
     }
   }
+}
 
   async irAVotar(): Promise<void> {
     try {
       const habilitacion = await this.eleccionesService.verificarHabilitacion();
+
       if (!habilitacion.habilitado) {
-        alert(habilitacion.mensaje);
+        await Swal.fire({
+          icon: 'warning',
+          title: 'No habilitado',
+          text: habilitacion.mensaje,
+          confirmButtonText: 'OK'
+        });
         return;
       }
+
       this.router.navigate(['/votar']);
+
     } catch (error) {
-      alert('Error al verificar habilitación. Intente nuevamente.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al verificar habilitación. Intente nuevamente.',
+        confirmButtonText: 'OK'
+      });
     }
   }
 
@@ -71,33 +105,81 @@ export class InicioComponent implements OnInit {
 
   // Métodos para el rol ADMIN
   abrirEleccion(): void {
-    if (confirm('¿Está seguro que desea ABRIR todas las mesas?')) {
-      this.eleccionesService.abrirTodasLasMesas().then(res => {
-        if (res.success) {
-          alert(`✅ ${res.mensaje}\nCircuitos abiertos: ${res.circuitos_abiertos}`);
-        } else {
-          alert('❌ Error al abrir las mesas');
-        }
-      }).catch(error => {
-        console.error('Error al abrir todas las mesas:', error);
-        alert('❌ Error al abrir las mesas. Verifique su conexión.');
-      });
-    }
+    Swal.fire({
+      title: '¿Está seguro?',
+      text: '¿Desea ABRIR todas las mesas?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, abrir',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.eleccionesService.abrirTodasLasMesas().then(res => {
+          if (res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Mesas abiertas',
+              html: `✅ ${res.mensaje}<br>Circuitos abiertos: ${res.circuitos_abiertos}`,
+              confirmButtonText: 'OK'
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: '❌ Error al abrir las mesas',
+              confirmButtonText: 'OK'
+            });
+          }
+        }).catch(error => {
+          console.error('Error al abrir todas las mesas:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: '❌ Error al abrir las mesas. Verifique su conexión.',
+            confirmButtonText: 'OK'
+          });
+        });
+      }
+    });
   }
 
   cerrarEleccion(): void {
-    if (confirm('¿Está seguro que desea CERRAR todas las mesas?')) {
-      this.eleccionesService.cerrarTodasLasMesas().then(res => {
-        if (res.success) {
-          alert(`✅ ${res.mensaje}\nCircuitos cerrados: ${res.circuitos_cerrados}`);
-        } else {
-          alert('❌ Error al cerrar las mesas');
-        }
-      }).catch(error => {
-        console.error('Error al cerrar todas las mesas:', error);
-        alert('❌ Error al cerrar las mesas. Verifique su conexión.');
-      });
-    }
+    Swal.fire({
+      title: '¿Está seguro?',
+      text: '¿Desea CERRAR todas las mesas?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cerrar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.eleccionesService.cerrarTodasLasMesas().then(res => {
+          if (res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Mesas cerradas',
+              html: `✅ ${res.mensaje}<br>Circuitos cerrados: ${res.circuitos_cerrados}`,
+              confirmButtonText: 'OK'
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: '❌ Error al cerrar las mesas',
+              confirmButtonText: 'OK'
+            });
+          }
+        }).catch(error => {
+          console.error('Error al cerrar todas las mesas:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: '❌ Error al cerrar las mesas. Verifique su conexión.',
+            confirmButtonText: 'OK'
+          });
+        });
+      }
+    });
   }
 
   crearEleccion(): void {
@@ -122,29 +204,78 @@ export class InicioComponent implements OnInit {
   // Métodos para el rol FUNCIONARIO (Integrante de mesa)
   async abrirMesa(): Promise<void> {
     try {
-      const resultado = await this.eleccionesService.abrirCircuito();
-      if (resultado.success) {
-        alert('Mesa abierta correctamente');
-      } else {
-        alert('Error al abrir la mesa: ' + resultado.mensaje);
+      if (!this.circuitoFunc) {
+        console.error('No hay circuitoFunc cargado');
+        return;
       }
-    } catch (error) {
+
+      const resultado = await this.eleccionesService.abrirCircuito(this.circuitoFunc.id);
+      if (resultado.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Mesa abierta',
+          text: resultado.mensaje,
+          confirmButtonText: 'Aceptar'
+        });
+        this.ngOnInit();
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: resultado.mensaje || 'No se pudo abrir la mesa.',
+          confirmButtonText: 'Aceptar'
+        });
+      }
+    } catch (error: any) {
       console.error('Error al abrir mesa:', error);
-      alert('Error al abrir la mesa. Intente nuevamente.');
+
+      // Si el backend devuelve 403 o 404, mostrar mensaje claro:
+      const backendMsg = error?.error?.error || error?.message || 'Error inesperado';
+      Swal.fire({
+        icon: 'error',
+        title: 'No autorizado',
+        text: backendMsg,
+        confirmButtonText: 'Aceptar'
+      });
     }
   }
 
   async cerrarMesa(): Promise<void> {
     try {
-      const resultado = await this.eleccionesService.cerrarCircuito();
-      if (resultado.success) {
-        alert('Mesa cerrada correctamente');
-      } else {
-        alert('Error al cerrar la mesa: ' + resultado.mensaje);
+      if (!this.circuitoFunc) {
+        console.error('No hay circuitoFunc cargado');
+        return;
       }
-    } catch (error) {
+
+      const resultado = await this.eleccionesService.cerrarCircuito(this.circuitoFunc.id);
+
+      if (resultado.success) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Mesa cerrada',
+          text: resultado.mensaje,
+          confirmButtonText: 'OK'
+        });
+        window.location.reload();
+      } else {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: resultado.mensaje || 'No se pudo cerrar la mesa',
+          confirmButtonText: 'OK'
+        });
+      }
+    } catch (error: any) {
       console.error('Error al cerrar mesa:', error);
-      alert('Error al cerrar la mesa. Intente nuevamente.');
+
+      const backendMsg = error?.error?.error || error?.message || 'Error inesperado';
+
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: backendMsg,
+        confirmButtonText: 'OK'
+      });
     }
   }
 

@@ -79,7 +79,9 @@ export class FetchService {
           localStorage.removeItem('usuario');
           throw new Error('401');
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorBody = await response.json().catch(() => ({}));
+        const errorMsg = errorBody?.error || errorBody?.message || `HTTP error! status: ${response.status}`;
+        throw new Error(errorMsg);
       }
 
       return await response.json();

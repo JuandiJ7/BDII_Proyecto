@@ -43,7 +43,7 @@ interface ListaDetalles {
         <div class="integrantes-list">
           <div *ngFor="let integrante of lista.integrantes" class="integrante-item">
             <p><strong>{{ integrante.orden }}.</strong> {{ integrante.nombres }} {{ integrante.apellidos }}</p>
-            <p class="candidato">{{ integrante.candidato }}</p>
+            <p class="candidato">{{ getEtiquetaCandidato(+integrante.candidato) }}</p>
           </div>
         </div>
       </div>
@@ -78,6 +78,16 @@ export class ListaDetallesComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarDetallesLista();
+  }
+
+  getEtiquetaCandidato(valor: number): string {
+    switch (valor) {
+      case 1: return 'Titular';
+      case 2: return 'Primer suplente';
+      case 3: return 'Segundo suplente';
+      case 4: return 'Tercer suplente';
+      default: return '';
+    }
   }
 
   async cargarDetallesLista(): Promise<void> {

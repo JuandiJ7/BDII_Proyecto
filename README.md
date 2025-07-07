@@ -32,7 +32,25 @@
 - Cierre de mesas y bloqueo posterior.
 - Reportes por circuito, partido y departamento.
 ### Scripts y datos
-- base/init.sql: creación del esquema y datos iniciales.
+- Usuarios VOTANTES de ejemplo (Circuito 1 Montevideo):
+| Serie | Numero | Contraseña |
+|-------|--------|------------|
+| AAA   | 1274   | ABC12345   |
+| AAA   | 3894   | ABC12345   |
+| AAA   | 6744   | ABC12345   |
+
+- Usuarios FUNCIONARIOS de ejemplo (Circuito 1 Montevideo):
+| Serie | Numero | Contraseña |
+|-------|--------|------------|
+| DAA   | 6140   | ABC12345   |
+| BAA   | 3121   | ABC12345   |
+| ABA   | 1245   | ABC12345   |
+
+- Usuario ADMIN:
+| Serie | Numero  | Contraseña |
+|-------|---------|------------|
+| JCD   | 21812   | juan       |
+
 
 ## Letra del trabajo
 En Uruguay, el día 11 de mayo se cierra el ciclo electoral 2024-2025

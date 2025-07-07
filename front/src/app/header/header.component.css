@@ -1,19 +1,39 @@
 .header {
-  background-color: #343a40;
+  background-color: #003ea5;
   color: white;
-  padding: 1rem;
+  padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.logo-titulo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.header img {
+  height: 40px;
+  margin-right: 1rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
 nav a {
   color: white;
-  margin-left: 1rem;
+  margin-left: 1.5rem;
   text-decoration: none;
+  font-weight: 500;
 }
 
 nav a.active {
-  font-weight: bold;
+  border-bottom: 2px solid white;
+}
+
+nav a:hover {
   text-decoration: underline;
 }

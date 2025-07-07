@@ -117,13 +117,17 @@ export class EleccionesService {
   // ==================== MÉTODOS PARA FUNCIONARIO - GESTIÓN DE CIRCUITO ====================
 
   // Abrir circuito (mesa) - FUNCIONARIO
-  async abrirCircuito(): Promise<any> {
-    return this.fetchService.post(`${this.apiUrl}/circuito/abrir`, '{}');
+  async abrirCircuito(idCircuito: number): Promise<any> {
+    return this.fetchService.post(`${this.apiUrl}/circuito/abrir`, JSON.stringify({ id_circuito: idCircuito }));
   }
 
   // Cerrar circuito (mesa) - FUNCIONARIO
-  async cerrarCircuito(): Promise<any> {
-    return this.fetchService.post(`${this.apiUrl}/circuito/cerrar`, '{}');
+  async cerrarCircuito(idCircuito: number): Promise<any> {
+    return this.fetchService.post(`${this.apiUrl}/circuito/cerrar`, JSON.stringify({ id_circuito: idCircuito }));
+  }
+
+  async obtenerCircuito(): Promise<any> {
+    return this.fetchService.get(`${this.apiUrl}/circuito/mi-circuito`);
   }
 
   // ==================== MÉTODOS PARA ADMIN - GESTIÓN GLOBAL ====================

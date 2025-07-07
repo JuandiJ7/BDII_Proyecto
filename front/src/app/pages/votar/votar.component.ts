@@ -14,6 +14,7 @@ import { EleccionesService } from '../../services/elecciones.service';
 import { ListaDetallesComponent } from './lista-detalles/lista-detalles.component';
 import { ConfirmarVotoComponent } from './confirmar-voto/confirmar-voto.component';
 import { AuthService } from '../../services/auth.service';
+import Swal from 'sweetalert2';
 
 interface Partido {
   id: number;
@@ -55,7 +56,8 @@ interface Papeleta {
     MatButtonModule,
     MatIconModule,
     MatDialogModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    
   ],
   providers: [provideAnimations()],
   templateUrl: './votar.component.html',
@@ -107,6 +109,13 @@ export class VotarComponent implements OnInit {
     this.cargarPartidos();
     this.cargarPapeletas();
   }
+
+  compareById = (a: any, b: any) => a && b && a.id === b.id;
+
+  displayLista = (lista: any) => {
+    return lista ? `Lista ${lista.numero}` : '';
+  };
+
 
   async cargarPartidos(): Promise<void> {
     try {
@@ -247,9 +256,14 @@ export class VotarComponent implements OnInit {
     // Manejar resultado del modal
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-        // Voto confirmado exitosamente
-        alert('¡Voto registrado correctamente!');
-        this.router.navigate(['/inicio']);
+        Swal.fire({
+          icon: 'success',
+          title: '¡Voto registrado!',
+          text: 'Tu voto se registró correctamente.',
+          confirmButtonText: 'OK'
+        }).then(() => {
+          this.router.navigate(['/inicio']);
+        });
       }
     });
   }

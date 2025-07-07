@@ -394,59 +394,31 @@ const adminRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     schema: {
       tags: ["admin"],
       summary: "Actualizar el padrón agregando automáticamente todos los ciudadanos que no estén en el padrón y tengan circuito asignado",
-      response: {
-        200: Type.Object({
-          success: Type.Boolean(),
-          agregados: Type.Number(),
-          sin_circuito: Type.Number(),
-          mensaje: Type.String()
-        })
-      }
     },
     onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
     handler: async function (request, reply) {
       try {
         // Obtener ciudadanos sin padrón
-        const [ciudadanos]: any[] = await db.query(
-          `SELECT c.credencial FROM CIUDADANO c
-           LEFT JOIN PADRON p ON c.credencial = p.credencial
-           WHERE p.credencial IS NULL`
+        await db.query(
+          `INSERT INTO PADRON (credencial, id_circuito, voto)
+            SELECT
+              c.credencial,
+              ci.id,
+              FALSE
+            FROM CIUDADANO c
+            JOIN CIRCUITO ci
+              ON LEFT(c.credencial, 3) BETWEEN ci.serie_desde AND ci.serie_hasta
+              AND CAST(SUBSTRING(c.credencial, 4) AS UNSIGNED) BETWEEN ci.numero_desde AND ci.numero_hasta
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM PADRON p
+              WHERE p.credencial = c.credencial AND p.id_circuito = ci.id
+            );
+              `
         );
 
-        let agregados = 0;
-        let sin_circuito = 0;
-
-        for (const ciudadano of ciudadanos) {
-          // Extraer serie y número de la credencial
-          const credencial = ciudadano.credencial;
-          const serie = credencial.substring(0, 3);
-          const numero = parseInt(credencial.substring(3), 10);
-
-          // Buscar circuito correspondiente
-          const [circuitoRows]: any[] = await db.query(
-            `SELECT id FROM CIRCUITO WHERE ? BETWEEN serie_desde AND serie_hasta AND ? BETWEEN numero_desde AND numero_hasta LIMIT 1`,
-            [serie, numero]
-          );
-
-          if (circuitoRows.length === 0) {
-            sin_circuito++;
-            continue;
-          }
-          const id_circuito = circuitoRows[0].id;
-
-          // Insertar en padrón
-          await db.query(
-            `INSERT INTO PADRON (credencial, id_circuito, habilitado, voto) VALUES (?, ?, 0, 0)` ,
-            [credencial, id_circuito]
-          );
-          agregados++;
-        }
-
         return {
-          success: true,
-          agregados,
-          sin_circuito,
-          mensaje: `Se agregaron ${agregados} ciudadanos al padrón. ${sin_circuito} no tenían circuito y no fueron agregados.`
+          mensaje: `Se actualizo el padron correctamente`
         };
       } catch (error) {
         console.error('Error al actualizar padrón:', error);
@@ -1038,5 +1010,4 @@ const adminRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     }
   });
 };
-
 export default adminRoutes; 

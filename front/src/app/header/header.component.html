@@ -1,7 +1,10 @@
 <header class="header">
-  <h1>🗳️ Sistema de Votación</h1>
+  <div class="logo-titulo">
+    <a routerLink="/inicio"><img src="escudo-azul_6.jpg" alt="Logo Gobierno" /></a>
+    <h1>Sistema de Votación</h1>
+  </div>
   <nav>
-    <a routerLink="/inicio">Inicio</a>
+    <a *ngIf="authService.isAuthenticated()" routerLink="/inicio">Inicio</a>
     <a *ngIf="authService.isAuthenticated()" (click)="cerrarSesion()" style="cursor: pointer;">
       Cerrar sesión
     </a>

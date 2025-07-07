@@ -11,11 +11,17 @@ html, body {
   box-sizing: border-box;
 }
 
+app-root {
+  display: flex;    
+  flex-direction: column;
+  min-height: 100%;
+}
+
 .main-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: calc(100vh);
+  flex: 1;
   padding: 1rem;
 }
 

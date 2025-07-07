@@ -188,6 +188,7 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     schema: {
       body: Type.Object({
         credencialVotante: Type.String(),
+        id_circuito_funcionario: Type.Number()
       }),
       tags: ["usuarios"],
       summary: "Validar votante por funcionario",
@@ -196,44 +197,41 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
     onRequest: [fastify.verifyJWT],
     handler: async function (request, reply) {
       const usuario = request.user as unknown as UsuarioLoginType;
-      const { credencialVotante } = request.body as { credencialVotante: string };
+      const { credencialVotante, id_circuito_funcionario } = request.body as { credencialVotante: string, id_circuito_funcionario: number };;
 
-      // Verificar que el usuario sea funcionario
+      // Solo FUNCIONARIO puede validar
       if (usuario.rol !== 'FUNCIONARIO') {
         return reply.forbidden('Solo los funcionarios pueden validar votantes');
       }
 
       try {
-        // Obtener datos del funcionario (circuito)
-        const [funcionarioRows]: any[] = await db.query(
-          `SELECT 
-            c.id AS id_circuito,
-            c.numero AS circuito
-          FROM CIUDADANO ci
-          JOIN PADRON p ON ci.credencial = p.credencial
-          JOIN CIRCUITO c ON p.id_circuito = c.id
-          WHERE ci.credencial = ?`,
-          [usuario.credencial]
+        // Buscar circuito asignado al funcionario, usando `cc_presidente`
+        const [funcionarioCircuito]: any[] = await db.query(
+          `SELECT id FROM CIRCUITO WHERE cc_presidente = ? OR cc_secretario = ? OR cc_vocal = ?`,
+          [usuario.credencial, usuario.credencial, usuario.credencial]
         );
 
-        if (funcionarioRows.length === 0) {
-          return reply.notFound('Funcionario no encontrado en el padrón');
+        if (funcionarioCircuito.length === 0) {
+          return reply.notFound('No se encontró circuito asignado al funcionario');
         }
 
-        const funcionario = funcionarioRows[0];
+        const circuitoAsignado = funcionarioCircuito[0];
 
-        // Obtener datos del votante y su estado en PADRON
+        // Validar que el id_circuito enviado coincida con el de la base
+        if (circuitoAsignado.id !== id_circuito_funcionario) {
+          return reply.badRequest('El circuito no coincide con el asignado al funcionario');
+        }
+
+        // Buscar votante y su circuito original
         const [votanteRows]: any[] = await db.query(
           `SELECT 
             ci.nombres AS nombre,
             CONCAT(ci.apellido1, ' ', ci.apellido2) AS apellido,
-            ci.cedula AS cedula,
             ci.credencial,
-            c.id AS id_circuito_original,
-            c.numero AS circuito,
+            ci.cedula,
             p.habilitado,
-            p.circuito_final,
-            p.voto
+            p.voto,
+            c.id AS id_circuito_original
           FROM CIUDADANO ci
           JOIN PADRON p ON ci.credencial = p.credencial
           JOIN CIRCUITO c ON p.id_circuito = c.id
@@ -247,19 +245,16 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
 
         const votante = votanteRows[0];
 
-        // Verificar si el votante ya votó
+        // Ya votó
         if (votante.voto) {
-          return reply.badRequest('El votante ya ha emitido su voto y no puede ser habilitado nuevamente');
+          return reply.badRequest('El votante ya ha emitido su voto');
         }
 
-        // Determinar si es observado (circuito diferente al del funcionario)
-        const esObservado = votante.id_circuito_original !== funcionario.id_circuito;
-        
-        // Si es observado, establecer circuito_final al circuito del funcionario
-        // Si no es observado, mantener circuito_final como NULL (usa el original)
-        const circuitoFinal = esObservado ? funcionario.id_circuito : null;
+        // Si circuito del votante ≠ circuito del funcionario → observado
+        const esObservado = votante.id_circuito_original !== circuitoAsignado.id;
+        const circuitoFinal = esObservado ? circuitoAsignado.id : null;
 
-        // Actualizar el padrón
+        // Actualizar padrón
         await db.query(
           `UPDATE PADRON SET habilitado = true, circuito_final = ? WHERE credencial = ?`,
           [circuitoFinal, credencialVotante]
@@ -270,12 +265,10 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
           votante: {
             nombre: votante.nombre,
             apellido: votante.apellido,
-            cedula: votante.cedula,
-            credencial: votante.credencial,
-            circuito: votante.circuito
+            cedula: votante.cedula
           },
-          esObservado: esObservado,
-          mensaje: esObservado 
+          esObservado,
+          mensaje: esObservado
             ? 'Votante habilitado como observado (circuito diferente)'
             : 'Votante habilitado correctamente'
         };
@@ -286,6 +279,7 @@ const usuariosRoutes: FastifyPluginAsync = async (fastify): Promise<void> => {
       }
     },
   });
+
 };
 
 export default usuariosRoutes;

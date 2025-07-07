@@ -46,7 +46,6 @@ export class AuthService {
     try {
       // Si ya está en localStorage, lo devuelve
       const usuarioLocal = localStorage.getItem('usuario');
-      console.log('Usuario en localStorage:', usuarioLocal);
       
       if (usuarioLocal && usuarioLocal !== 'undefined') {
         try {

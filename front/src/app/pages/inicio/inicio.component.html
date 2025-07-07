@@ -3,9 +3,23 @@
 
   <div class="datos-usuario" *ngIf="usuario">
     <p><strong>Nombre:</strong> {{ usuario.nombre }} {{ usuario.apellido }}</p>
+    <p><strong>Departamento:</strong> {{ usuario.departamento }}</p>
     <p><strong>Cédula:</strong> {{ usuario.cedula }}</p>
-    <p><strong>Circuito:</strong> {{ usuario.circuito }}</p>
+    <p><strong>Circuito donde vota:</strong> {{ usuario.circuito }} - {{ usuario.direccion_establecimiento }}</p>
     <p><strong>Rol:</strong> {{ usuario.rol }}</p>
+    <p *ngIf="usuario?.rol === 'FUNCIONARIO'">
+      <strong>Circuito asignado:</strong>
+      {{ circuitoFunc?.numero }} -  {{ circuitoFunc?.departamento }}
+    </p>
+    <p *ngIf="usuario?.rol === 'FUNCIONARIO'">
+      <strong>Direccion:</strong>
+      {{ circuitoFunc?.establecimiento }}
+    </p>
+    <p *ngIf="usuario?.rol === 'FUNCIONARIO'">
+      <strong>Circuito cerrado:</strong>
+      {{ circuitoFunc?.circuito_cerrado ? 'Sí' : 'No' }}
+    </p>
+    
   </div>
 
   <div class="acciones-comunes">

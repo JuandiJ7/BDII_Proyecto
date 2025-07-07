@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { EleccionesService } from '../../services/elecciones.service';
 
 interface Usuario {
   nombre: string;
@@ -21,6 +22,17 @@ interface Votante {
   circuito: string;
 }
 
+type Circuito = {
+  id: number;
+  numero: string;
+  circuito_cerrado: boolean;
+  departamento: string;
+  establecimiento: string;
+  presidente: string;
+  secretario: string;
+  vocal: string;
+};
+
 @Component({
   selector: 'app-confirmar-circuito',
   standalone: true,
@@ -36,6 +48,7 @@ export class ConfirmarCircuitoComponent implements OnInit {
   departamento: string = '';
   direccion_establecimiento: string = '';
   rol: string = '';
+  circuitoFunc: Circuito | null = null;
 
   // Datos del votante a validar
   credencialVotante: string = '';
@@ -46,7 +59,8 @@ export class ConfirmarCircuitoComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private eleccionesService: EleccionesService,
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -62,6 +76,13 @@ export class ConfirmarCircuitoComponent implements OnInit {
       // Si no es funcionario, redirigir
       if (this.rol !== 'FUNCIONARIO') {
         this.router.navigate(['/inicio']);
+      } else {
+            try {
+          this.circuitoFunc = await this.eleccionesService.obtenerCircuito();
+          console.log('Circuito del funcionario:', this.circuitoFunc);
+        } catch (error) {
+          return
+        }
       }
     } else {
       this.router.navigate(['/auth/login']);
@@ -89,7 +110,7 @@ export class ConfirmarCircuitoComponent implements OnInit {
           credencial: this.credencialVotante,
           circuito: datos.circuito
         };
-        this.esObservado = datos.circuito !== this.circuito;
+        this.esObservado = datos.circuito !== this.circuitoFunc?.numero;
         this.mensaje = '';
       } else {
         this.votanteEncontrado = null;
@@ -116,7 +137,7 @@ export class ConfirmarCircuitoComponent implements OnInit {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ credencialVotante: this.credencialVotante })
+        body: JSON.stringify({ credencialVotante: this.credencialVotante, id_circuito_funcionario: this.circuitoFunc?.id })
       });
 
       const resultado = await response.json();
