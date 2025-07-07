@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 import { EleccionesService } from '../../services/elecciones.service';
+import Swal from 'sweetalert2';
 
 interface Circuito {
   id: number;
@@ -21,7 +22,8 @@ interface Circuito {
 interface Empleado {
   credencial: string;
   nombres: string;
-  apellidos: string;
+  apellido1: string;
+  apellido2: string;
 }
 
 interface Autoridades {
@@ -84,21 +86,21 @@ interface Autoridades {
             <div class="autoridad-item">
               <strong>Presidente:</strong> 
               <span *ngIf="autoridadesActuales.presidente">
-                {{ autoridadesActuales.presidente.nombres }} {{ autoridadesActuales.presidente.apellidos }}
+                {{ autoridadesActuales.presidente.nombres }} {{ autoridadesActuales.presidente.apellido1 }} {{ autoridadesActuales.presidente.apellido2 }}
               </span>
               <span *ngIf="!autoridadesActuales.presidente" class="sin-asignar">Sin asignar</span>
             </div>
             <div class="autoridad-item">
               <strong>Secretario:</strong> 
               <span *ngIf="autoridadesActuales.secretario">
-                {{ autoridadesActuales.secretario.nombres }} {{ autoridadesActuales.secretario.apellidos }}
+                {{ autoridadesActuales.secretario.nombres }} {{ autoridadesActuales.secretario.apellido1 }} {{ autoridadesActuales.secretario.apellido2 }}
               </span>
               <span *ngIf="!autoridadesActuales.secretario" class="sin-asignar">Sin asignar</span>
             </div>
             <div class="autoridad-item">
               <strong>Vocal:</strong> 
               <span *ngIf="autoridadesActuales.vocal">
-                {{ autoridadesActuales.vocal.nombres }} {{ autoridadesActuales.vocal.apellidos }}
+                {{ autoridadesActuales.vocal.nombres }} {{ autoridadesActuales.vocal.apellido1 }} {{ autoridadesActuales.vocal.apellido2 }}
               </span>
               <span *ngIf="!autoridadesActuales.vocal" class="sin-asignar">Sin asignar</span>
             </div>
@@ -119,7 +121,7 @@ interface Autoridades {
               <mat-autocomplete #autoPresidente="matAutocomplete" [displayWith]="displayEmpleado">
                 <mat-option value="">Sin asignar</mat-option>
                 <mat-option *ngFor="let empleado of empleadosFiltradosPresidente$ | async" [value]="empleado">
-                  {{ empleado.nombres }} {{ empleado.apellidos }} ({{ empleado.credencial }})
+                  {{ empleado.nombres }} {{ empleado.apellido1 }} {{ empleado.apellido2 }} ({{ empleado.credencial }})
                 </mat-option>
               </mat-autocomplete>
             </mat-form-field>
@@ -135,7 +137,7 @@ interface Autoridades {
               <mat-autocomplete #autoSecretario="matAutocomplete" [displayWith]="displayEmpleado">
                 <mat-option value="">Sin asignar</mat-option>
                 <mat-option *ngFor="let empleado of empleadosFiltradosSecretario$ | async" [value]="empleado">
-                  {{ empleado.nombres }} {{ empleado.apellidos }} ({{ empleado.credencial }})
+                  {{ empleado.nombres }} {{ empleado.apellido1 }} {{ empleado.apellido2 }} ({{ empleado.credencial }})
                 </mat-option>
               </mat-autocomplete>
             </mat-form-field>
@@ -151,7 +153,7 @@ interface Autoridades {
               <mat-autocomplete #autoVocal="matAutocomplete" [displayWith]="displayEmpleado">
                 <mat-option value="">Sin asignar</mat-option>
                 <mat-option *ngFor="let empleado of empleadosFiltradosVocal$ | async" [value]="empleado">
-                  {{ empleado.nombres }} {{ empleado.apellidos }} ({{ empleado.credencial }})
+                  {{ empleado.nombres }} {{ empleado.apellido1 }} {{ empleado.apellido2 }} ({{ empleado.credencial }})
                 </mat-option>
               </mat-autocomplete>
             </mat-form-field>
@@ -266,7 +268,7 @@ export class AutoridadesModalComponent implements OnInit {
   };
 
   displayEmpleado = (empleado: Empleado | null): string => {
-    return empleado ? `${empleado.nombres} ${empleado.apellidos} (${empleado.credencial})` : '';
+    return empleado ? `${empleado.nombres} ${empleado.apellido1} ${empleado.apellido2} (${empleado.credencial})` : '';
   };
 
   private _filterCircuitos(value: any): Circuito[] {
@@ -283,7 +285,8 @@ export class AutoridadesModalComponent implements OnInit {
     const filterValue = typeof value === 'string' ? value.toLowerCase() : '';
     return this.empleados.filter(empleado =>
       empleado.nombres.toLowerCase().includes(filterValue) ||
-      empleado.apellidos.toLowerCase().includes(filterValue) ||
+      empleado.apellido1.toLowerCase().includes(filterValue) ||
+      empleado.apellido2.toLowerCase().includes(filterValue) ||
       empleado.credencial.toLowerCase().includes(filterValue)
     );
   }
@@ -343,19 +346,36 @@ export class AutoridadesModalComponent implements OnInit {
         secretario: this.secretarioControl.value ? this.secretarioControl.value.credencial : undefined,
         vocal: this.vocalControl.value ? this.vocalControl.value.credencial : undefined
       };
+
       const resultado = await this.eleccionesService.modificarAutoridadesCircuito(
-        this.circuitoSeleccionado.id, 
+        this.circuitoSeleccionado.id,
         autoridades
       );
+
       if (resultado.success) {
-        alert('Autoridades actualizadas correctamente');
+        await Swal.fire({
+          icon: 'success',
+          title: 'Actualizado',
+          text: 'Autoridades actualizadas correctamente.',
+          confirmButtonText: 'Aceptar'
+        });
         this.dialogRef.close(true);
       } else {
-        alert('Error al actualizar autoridades');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudieron actualizar las autoridades.',
+          confirmButtonText: 'Aceptar'
+        });
       }
     } catch (error) {
       console.error('Error al guardar cambios:', error);
-      alert('Error al guardar los cambios');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Ocurrió un error al guardar los cambios.',
+        confirmButtonText: 'Aceptar'
+      });
     }
   }
 
