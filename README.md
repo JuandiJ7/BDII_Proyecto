@@ -32,24 +32,29 @@
 - Cierre de mesas y bloqueo posterior.
 - Reportes por circuito, partido y departamento.
 ### Scripts y datos
-- Usuarios VOTANTES de ejemplo (Circuito 1 Montevideo):
-| Serie | Numero | Contraseña |
-|-------|--------|------------|
-| AAA   | 1274   | ABC12345   |
-| AAA   | 3894   | ABC12345   |
-| AAA   | 6744   | ABC12345   |
+### Scripts y datos
 
-- Usuarios FUNCIONARIOS de ejemplo (Circuito 1 Montevideo):
-| Serie | Numero | Contraseña |
-|-------|--------|------------|
-| DAA   | 6140   | ABC12345   |
-| BAA   | 3121   | ABC12345   |
-| ABA   | 1245   | ABC12345   |
+**Usuarios VOTANTES de ejemplo (Circuito 1 Montevideo):**
 
-- Usuario ADMIN:
-| Serie | Numero  | Contraseña |
-|-------|---------|------------|
-| JCD   | 21812   | juan       |
+| Serie | Número | Contraseña |
+|-------|--------|-------------|
+| AAA   | 1274   | ABC12345    |
+| AAA   | 3894   | ABC12345    |
+| AAA   | 6744   | ABC12345    |
+
+**Usuarios FUNCIONARIOS de ejemplo (Circuito 1 Montevideo):**
+
+| Serie | Número | Contraseña |
+|-------|--------|-------------|
+| DAA   | 6140   | ABC12345    |
+| BAA   | 3121   | ABC12345    |
+| ABA   | 1245   | ABC12345    |
+
+**Usuario ADMIN:**
+
+| Serie | Número | Contraseña |
+|-------|--------|-------------|
+| JCD   | 21812  | juan        |
 
 
 ## Letra del trabajo
