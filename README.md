@@ -24,6 +24,10 @@
 3. Acceder a la app:
 - Frontend: http://localhost
 - Backend (API): http://localhost/back
+
+4. Datos para acceder a la BD en DataGrip>
+![image](https://github.com/user-attachments/assets/10960880-cb82-49bd-9b2e-06e1b66c3f3b)
+
 ### Funcionalidades esperadas
 - Registro e inicio de sesión.
 - Alta de elecciones, circuitos, mesas, papeletas, partidos y listas.
